@@ -11,10 +11,6 @@
 
 //#include "DDSTextureLoader\DDSTextureLoader.h"
 
-#pragma comment (lib, "d3d12.lib")
-#pragma comment (lib, "dxgi.lib")
-#pragma comment (lib, "d3dcompiler.lib")
-
 #define ThrowIfFailed(expr) \
 	do { \
 		if (FAILED(expr)) throw; \
@@ -82,22 +78,6 @@ public:
 	D3D12_GPU_DESCRIPTOR_HANDLE hGPUHeapStart;
 	UINT HandleIncrementSize;
 };
-
-
-
-//helper function for resource barriers in command lists
-void setResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, UINT StateBefore, UINT StateAfter)
-{
-	D3D12_RESOURCE_BARRIER barrierDesc = {};
-
-	barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrierDesc.Transition.pResource = resource;
-	barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	barrierDesc.Transition.StateBefore = (D3D12_RESOURCE_STATES)StateBefore;
-	barrierDesc.Transition.StateAfter = (D3D12_RESOURCE_STATES)StateAfter;
-
-	commandList->ResourceBarrier(1, &barrierDesc);
-}
 
 class CUploadBufferWrapper
 {

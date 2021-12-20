@@ -35,7 +35,8 @@ project "ToyRaygun"
     debugdir "./runtime/"
 
     files { 
-        path.join(SRC_DIR, "**.cpp")
+        path.join(SRC_DIR, "**.cpp"),
+        path.join(SRC_DIR, "**.h")
     }
 
     includedirs {
@@ -43,6 +44,10 @@ project "ToyRaygun"
     }
 
     links { 
+        "d3d12",
+        "dxgi",
+        "d3dcompiler",
+
         path.join(LIB_DIR, "SDL2-2.0.18/lib/x64/SDL2"),         
     }
 
