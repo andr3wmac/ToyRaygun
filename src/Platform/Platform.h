@@ -11,6 +11,15 @@
 #include <stdio.h>
 #include <SDL.h>
 
+#if defined(_MSC_VER)
+#    if defined(_WIN32)
+#        define PLATFORM_WINDOWS 1
+#        if defined(_WIN64)
+#           define PLATFORM_WINDOWS_64 1
+#        endif
+#    endif
+#endif
+
 class Platform
 {
 protected:

@@ -43,6 +43,10 @@ project "ToyRaygun"
         "_THREAD_SAFE"
     }
 
+    includedirs {
+        path.join(LIB_DIR, "bx/include/")  
+    }
+
     files { 
         path.join(SRC_DIR, "*.cpp"), 
         path.join(SRC_DIR, "*.h"),
@@ -54,9 +58,20 @@ project "ToyRaygun"
         path.join(SRC_DIR, "Scene/*.h"),
     }
 
+    filter "configurations:Debug*"
+        defines {
+            "BX_CONFIG_DEBUG=1",
+        }
+
+    filter "configurations:Release*"
+        defines {
+            "BX_CONFIG_DEBUG=0",
+        }
+
     filter "system:windows"
         includedirs {
             path.join(LIB_DIR, "SDL2-2.0.18/include/"),  
+            path.join(LIB_DIR, "bx/include/compat/msvc/")  
         }
 
         files {
@@ -69,7 +84,8 @@ project "ToyRaygun"
             "dxgi",
             "d3dcompiler",
 
-            path.join(LIB_DIR, "SDL2-2.0.18/lib/x64/SDL2"),         
+            path.join(LIB_DIR, "SDL2-2.0.18/lib/x64/SDL2"),
+            path.join(LIB_DIR, "bx/lib/x64/bxRelease")          
         }
 
     filter "system:macosx"

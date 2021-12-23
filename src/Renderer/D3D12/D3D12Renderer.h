@@ -21,7 +21,7 @@ const UINT D3D12_BACKBUFFER_COUNT = 4; //define number of backbuffers to use
 HRESULT CreateTexture2D(_In_ ID3D12Device* d3dDevice, _In_ ID3D12GraphicsCommandList* cmdList, _In_ CUploadBufferWrapper* uploadBuffer,
     _In_ const wchar_t* fileName, _Outptr_opt_ ID3D12Resource** resourceOut);
 
-class D3D12 : public Renderer
+class D3D12Renderer : public Renderer
 {
 protected:
     Microsoft::WRL::ComPtr<ID3D12Device> mDevice;							// d3d12 device

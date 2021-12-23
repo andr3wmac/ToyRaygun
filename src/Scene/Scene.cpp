@@ -7,38 +7,37 @@ Implementation for scene creation functions
 
 
 #include "Scene.h"
-#include "ShaderTypes.h"
+#include "../Renderer/ShaderTypes.h"
 
-using namespace simd;
+#include "bx/math.h"
 
-float3 getTriangleNormal(float3 v0, float3 v1, float3 v2) {
-    float3 e1 = normalize(v1 - v0);
-    float3 e2 = normalize(v2 - v0);
-    
-    return cross(e1, e2);
+bx::Vec3 getTriangleNormal(bx::Vec3 v0, bx::Vec3 v1, bx::Vec3 v2) {
+    bx::Vec3 e1 = bx::normalize(bx::sub(v1, v0));
+    bx::Vec3 e2 = bx::normalize(bx::sub(v2, v0));
+
+    return bx::cross(e1, e2);
 }
 
-void Scene::addCube(vector_float3 color,
-                    matrix_float4x4 transform)
+void Scene::addCube(bx::Vec3 color, float* transformMtx)
 {
-    float3 cubeVertices[] = {
-        vector3(-0.5f, -0.5f, -0.5f),
-        vector3( 0.5f, -0.5f, -0.5f),
-        vector3(-0.5f,  0.5f, -0.5f),
-        vector3( 0.5f,  0.5f, -0.5f),
-        vector3(-0.5f, -0.5f,  0.5f),
-        vector3( 0.5f, -0.5f,  0.5f),
-        vector3(-0.5f,  0.5f,  0.5f),
-        vector3( 0.5f,  0.5f,  0.5f),
+    bx::Vec3 cubeVertices[] = {
+        bx::Vec3(-0.5f, -0.5f, -0.5f),
+        bx::Vec3( 0.5f, -0.5f, -0.5f),
+        bx::Vec3(-0.5f,  0.5f, -0.5f),
+        bx::Vec3( 0.5f,  0.5f, -0.5f),
+        bx::Vec3(-0.5f, -0.5f,  0.5f),
+        bx::Vec3( 0.5f, -0.5f,  0.5f),
+        bx::Vec3(-0.5f,  0.5f,  0.5f),
+        bx::Vec3( 0.5f,  0.5f,  0.5f),
     };
     
     for (int i = 0; i < 8; i++) {
-        float3 vertex = cubeVertices[i];
-        
-        float4 transformedVertex = vector4(vertex.x, vertex.y, vertex.z, 1.0f);
-        transformedVertex = transform * transformedVertex;
-        
-        cubeVertices[i] = transformedVertex.xyz;
+        bx::Vec3 vertex = cubeVertices[i];
+
+        float transformedVertex[4] = { vertex.x, vertex.y, vertex.z, 1.0f };
+        bx::vec4MulMtx(transformedVertex, transformedVertex, transformMtx);
+
+        cubeVertices[i] = bx::Vec3(transformedVertex[0], transformedVertex[1], transformedVertex[2]);
     }
     
     createCubeFace(vertices, normals, colors, cubeVertices, color, 0, 4, 6, 2, false, TRIANGLE_MASK_GEOMETRY);
@@ -49,81 +48,79 @@ void Scene::addCube(vector_float3 color,
     createCubeFace(vertices, normals, colors, cubeVertices, color, 4, 5, 7, 6, false, TRIANGLE_MASK_GEOMETRY);
 }
 
-void Scene::addPlane(vector_float3 color,
-                     matrix_float4x4 transform)
+void Scene::addPlane(bx::Vec3 color, float* transformMtx)
 {
-    float3 cubeVertices[] = {
-        vector3(-0.5f, -0.5f, -0.5f),
-        vector3( 0.5f, -0.5f, -0.5f),
-        vector3(-0.5f,  0.5f, -0.5f),
-        vector3( 0.5f,  0.5f, -0.5f),
-        vector3(-0.5f, -0.5f,  0.5f),
-        vector3( 0.5f, -0.5f,  0.5f),
-        vector3(-0.5f,  0.5f,  0.5f),
-        vector3( 0.5f,  0.5f,  0.5f),
+    bx::Vec3 cubeVertices[] = {
+        bx::Vec3(-0.5f, -0.5f, -0.5f),
+        bx::Vec3( 0.5f, -0.5f, -0.5f),
+        bx::Vec3(-0.5f,  0.5f, -0.5f),
+        bx::Vec3( 0.5f,  0.5f, -0.5f),
+        bx::Vec3(-0.5f, -0.5f,  0.5f),
+        bx::Vec3( 0.5f, -0.5f,  0.5f),
+        bx::Vec3(-0.5f,  0.5f,  0.5f),
+        bx::Vec3( 0.5f,  0.5f,  0.5f),
     };
     
     for (int i = 0; i < 8; i++) {
-        float3 vertex = cubeVertices[i];
-        
-        float4 transformedVertex = vector4(vertex.x, vertex.y, vertex.z, 1.0f);
-        transformedVertex = transform * transformedVertex;
-        
-        cubeVertices[i] = transformedVertex.xyz;
+        bx::Vec3 vertex = cubeVertices[i];
+
+        float transformedVertex[4] = { vertex.x, vertex.y, vertex.z, 1.0f };
+        bx::vec4MulMtx(transformedVertex, transformedVertex, transformMtx);
+
+        cubeVertices[i] = bx::Vec3(transformedVertex[0], transformedVertex[1], transformedVertex[2]);
     }
     
     createCubeFace(vertices, normals, colors, cubeVertices, color, 0, 1, 5, 4, true, TRIANGLE_MASK_GEOMETRY);
 }
 
-void Scene::addAreaLight(vector_float3 color,
-                         matrix_float4x4 transform)
+void Scene::addAreaLight(bx::Vec3 color, float* transformMtx)
 {
-    float3 cubeVertices[] = {
-        vector3(-0.5f, -0.5f, -0.5f),
-        vector3( 0.5f, -0.5f, -0.5f),
-        vector3(-0.5f,  0.5f, -0.5f),
-        vector3( 0.5f,  0.5f, -0.5f),
-        vector3(-0.5f, -0.5f,  0.5f),
-        vector3( 0.5f, -0.5f,  0.5f),
-        vector3(-0.5f,  0.5f,  0.5f),
-        vector3( 0.5f,  0.5f,  0.5f),
+    bx::Vec3 cubeVertices[] = {
+        bx::Vec3(-0.5f, -0.5f, -0.5f),
+        bx::Vec3( 0.5f, -0.5f, -0.5f),
+        bx::Vec3(-0.5f,  0.5f, -0.5f),
+        bx::Vec3( 0.5f,  0.5f, -0.5f),
+        bx::Vec3(-0.5f, -0.5f,  0.5f),
+        bx::Vec3( 0.5f, -0.5f,  0.5f),
+        bx::Vec3(-0.5f,  0.5f,  0.5f),
+        bx::Vec3( 0.5f,  0.5f,  0.5f),
     };
     
     for (int i = 0; i < 8; i++) {
-        float3 vertex = cubeVertices[i];
+        bx::Vec3 vertex = cubeVertices[i];
         
-        float4 transformedVertex = vector4(vertex.x, vertex.y, vertex.z, 1.0f);
-        transformedVertex = transform * transformedVertex;
+        float transformedVertex[4] = { vertex.x, vertex.y, vertex.z, 1.0f };
+        bx::vec4MulMtx(transformedVertex, transformedVertex, transformMtx);
         
-        cubeVertices[i] = transformedVertex.xyz;
+        cubeVertices[i] = bx::Vec3(transformedVertex[0], transformedVertex[1], transformedVertex[2]);
     }
     
     createCubeFace(vertices, normals, colors, cubeVertices, color, 0, 1, 5, 4, true, TRIANGLE_MASK_LIGHT);
 }
 
-void Scene::createCubeFace(std::vector<float3> & vertices,
-                    std::vector<float3> & normals,
-                    std::vector<float3> & colors,
-                    float3 *cubeVertices,
-                    float3 color,
-                    unsigned int i0,
-                    unsigned int i1,
-                    unsigned int i2,
-                    unsigned int i3,
-                    bool inwardNormals,
-                    unsigned int triangleMask)
+void Scene::createCubeFace(std::vector<bx::Vec3>& vertices,
+                            std::vector<bx::Vec3>& normals,
+                            std::vector<bx::Vec3>& colors,
+                            bx::Vec3* cubeVertices,
+                            bx::Vec3 color,
+                            unsigned int i0,
+                            unsigned int i1,
+                            unsigned int i2,
+                            unsigned int i3,
+                            bool inwardNormals,
+                            unsigned int triangleMask)
 {
-    float3 v0 = cubeVertices[i0];
-    float3 v1 = cubeVertices[i1];
-    float3 v2 = cubeVertices[i2];
-    float3 v3 = cubeVertices[i3];
+    bx::Vec3 v0 = cubeVertices[i0];
+    bx::Vec3 v1 = cubeVertices[i1];
+    bx::Vec3 v2 = cubeVertices[i2];
+    bx::Vec3 v3 = cubeVertices[i3];
     
-    float3 n0 = getTriangleNormal(v0, v1, v2);
-    float3 n1 = getTriangleNormal(v0, v2, v3);
+    bx::Vec3 n0 = getTriangleNormal(v0, v1, v2);
+    bx::Vec3 n1 = getTriangleNormal(v0, v2, v3);
     
     if (inwardNormals) {
-        n0 = -n0;
-        n1 = -n1;
+        n0 = bx::neg(n0);
+        n1 = bx::neg(n1);
     }
     
     vertices.push_back(v0);

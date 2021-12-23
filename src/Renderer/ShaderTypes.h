@@ -8,7 +8,7 @@ Header containing types and enum constants shared between Metal shaders and Swif
 #ifndef ShaderTypes_h
 #define ShaderTypes_h
 
-#include <simd/simd.h>
+#include "bx/math.h"
 
 #define TRIANGLE_MASK_GEOMETRY 1
 #define TRIANGLE_MASK_LIGHT    2
@@ -18,18 +18,18 @@ Header containing types and enum constants shared between Metal shaders and Swif
 #define RAY_MASK_SECONDARY 1
 
 struct Camera {
-    vector_float3 position;
-    vector_float3 right;
-    vector_float3 up;
-    vector_float3 forward;
+    bx::Vec3 position;
+    bx::Vec3 right;
+    bx::Vec3 up;
+    bx::Vec3 forward;
 };
 
 struct AreaLight {
-    vector_float3 position;
-    vector_float3 forward;
-    vector_float3 right;
-    vector_float3 up;
-    vector_float3 color;
+    bx::Vec3 position;
+    bx::Vec3 forward;
+    bx::Vec3 right;
+    bx::Vec3 up;
+    bx::Vec3 color;
 };
 
 struct Uniforms

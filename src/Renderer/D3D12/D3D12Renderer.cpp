@@ -14,7 +14,7 @@ VertexBufferResource g_VB;
 HWND g_hWnd;
 BOOL g_requestResize = false;
 
-void D3D12::Init()
+void D3D12Renderer::Init()
 {
 	g_hWnd = GetActiveWindow();
 	HWND hWnd = g_hWnd;
@@ -199,7 +199,7 @@ void D3D12::Init()
 	hr = mCommandList->Reset(mCommandListAllocator.Get(), NULL);
 }
 
-void D3D12::Destroy()
+void D3D12Renderer::Destroy()
 {
 	//ensure we're not fullscreen
 	mSwapChain->SetFullscreenState(FALSE, NULL);
@@ -208,7 +208,7 @@ void D3D12::Destroy()
 	CloseHandle(mHandle);
 }
 
-void D3D12::RenderFrame()
+void D3D12Renderer::RenderFrame()
 {
 	using namespace DirectX;
 
@@ -309,7 +309,7 @@ void D3D12::RenderFrame()
 
 //Assigns an event to mFence, and sets the fence's completion signal value. 
 //Then asks the GPU to signal that fence, and asks the CPU to wait for the event handle.
-void D3D12::WaitForCommandQueueFence()
+void D3D12Renderer::WaitForCommandQueueFence()
 {
 	//reset the fence signal
 	mFence->Signal(0);
@@ -323,7 +323,7 @@ void D3D12::WaitForCommandQueueFence()
 	WaitForSingleObject(mHandle, INFINITE);
 }
 
-HRESULT D3D12::ResizeSwapChain()
+HRESULT D3D12Renderer::ResizeSwapChain()
 {
 	HRESULT hr = S_OK;
 	g_requestResize = false;
@@ -379,7 +379,7 @@ HRESULT D3D12::ResizeSwapChain()
 }
 
 //helper function for resource barriers in command lists
-void D3D12::SetResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, UINT StateBefore, UINT StateAfter)
+void D3D12Renderer::SetResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, UINT StateBefore, UINT StateAfter)
 {
 	D3D12_RESOURCE_BARRIER barrierDesc = {};
 
