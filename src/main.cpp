@@ -3,11 +3,11 @@
  * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
  */
 
-#include "Platform.h"
-#include "Renderer/MetalRenderer.h"
-#include "Scene.h"
-#include "Transforms.h"
-#include "ShaderTypes.h"
+#include "Platform/Platform.h"
+#include "Renderer/Metal/MetalRenderer.h"
+#include "Renderer/ShaderTypes.h"
+#include "Scene/Scene.h"
+#include "Scene/Transforms.h"
 
 using namespace simd;
 

@@ -7,8 +7,13 @@ solution "ToyRaygun"
     startproject "ToyRaygun"
 
     configurations { "Release", "Debug" }
-    architecture "ARM64"
-    systemversion "11.0.0"
+
+    filter "system:windows"
+        architecture "x86_64"
+
+    filter "system:macosx"
+        architecture "ARM64"
+        systemversion "11.0.0"
 
     filter "configurations:Release*"
         defines { "NDEBUG" }
@@ -39,16 +44,38 @@ project "ToyRaygun"
     }
 
     files { 
-        path.join(SRC_DIR, "**.cpp"),
-        path.join(SRC_DIR, "**.h"),
+        path.join(SRC_DIR, "*.cpp"), 
+        path.join(SRC_DIR, "*.h"),
+        path.join(SRC_DIR, "Platform/*.cpp"), 
+        path.join(SRC_DIR, "Platform/*.h"),
+        path.join(SRC_DIR, "Renderer/*.cpp"), 
+        path.join(SRC_DIR, "Renderer/*.h"),
+        path.join(SRC_DIR, "Scene/*.cpp"), 
+        path.join(SRC_DIR, "Scene/*.h"),
     }
 
-    pkgconfig.add_includes("sdl2")
-    pkgconfig.add_links("sdl2")
+    filter "system:windows"
+        includedirs {
+            path.join(LIB_DIR, "SDL2-2.0.18/include/"),  
+        }
+
+        files {
+            path.join(SRC_DIR, "Renderer/D3D12/**.cpp"),
+            path.join(SRC_DIR, "Renderer/D3D12/**.h")
+        }
+
+        links { 
+            "d3d12",
+            "dxgi",
+            "d3dcompiler",
+
+            path.join(LIB_DIR, "SDL2-2.0.18/lib/x64/SDL2"),         
+        }
 
     filter "system:macosx"
         files {
-            path.join(SRC_DIR, "**.mm"),
+            path.join(SRC_DIR, "Renderer/Metal/**.mm"),
+            path.join(SRC_DIR, "Renderer/Metal/**.h"),
             path.join(SRC_DIR, "shaders/**.metal")
         }
 
@@ -57,5 +84,11 @@ project "ToyRaygun"
             "MetalPerformanceShaders.framework",
             "QuartzCore.framework",     
         }
+
+    -- use if statement so these functions won't be called at all on windows.
+    if os.host() == "macosx" then
+        pkgconfig.add_includes("sdl2")
+        pkgconfig.add_links("sdl2")
+    end
 
     filter {}

@@ -1,7 +1,7 @@
 #ifndef _RENDERERS_BASE_
 #define _RENDERERS_BASE_
 
-#include "Platform.h"
+#include "../Platform/Platform.h"
 #include "../Scene/Scene.h"
 
 class Renderer

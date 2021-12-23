@@ -6,7 +6,7 @@ Implementation for scene creation functions
 */
 
 
-#import "Scene.h"
+#include "Scene.h"
 #include "ShaderTypes.h"
 
 using namespace simd;

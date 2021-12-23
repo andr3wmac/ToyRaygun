@@ -1,7 +1,7 @@
 #ifndef _RENDERERS_METAL_
 #define _RENDERERS_METAL_
 
-#include "Renderer.h"
+#include "../Renderer.h"
 
 class MetalRenderer : public Renderer
 {
