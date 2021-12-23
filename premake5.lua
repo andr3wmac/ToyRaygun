@@ -1,3 +1,5 @@
+local pkgconfig = require 'pkgconfig'
+
 local LIB_DIR = "lib/"
 local SRC_DIR = "src/"
 
@@ -5,10 +7,8 @@ solution "ToyRaygun"
     startproject "ToyRaygun"
 
     configurations { "Release", "Debug" }
-    platforms { "x86_64" }
-
-    filter "platforms:x86_64"
-        architecture "x86_64"
+    architecture "ARM64"
+    systemversion "11.0.0"
 
     filter "configurations:Release*"
         defines { "NDEBUG" }
@@ -25,7 +25,7 @@ solution "ToyRaygun"
 project "ToyRaygun"
     kind "ConsoleApp"
     language "C++"
-    cppdialect "C++17"
+    cppdialect "C++14"
     exceptionhandling "Off"
     rtti "Off"
     warnings "Default"
@@ -34,25 +34,28 @@ project "ToyRaygun"
 
     debugdir "./runtime/"
 
+    defines {
+        "_THREAD_SAFE"
+    }
+
     files { 
         path.join(SRC_DIR, "**.cpp"),
-        path.join(SRC_DIR, "**.h")
+        path.join(SRC_DIR, "**.h"),
     }
 
-    includedirs {
-        path.join(LIB_DIR, "SDL2-2.0.18/include/"),  
-    }
+    pkgconfig.add_includes("sdl2")
+    pkgconfig.add_links("sdl2")
 
-    links { 
-        "d3d12",
-        "dxgi",
-        "d3dcompiler",
+    filter "system:macosx"
+        files {
+            path.join(SRC_DIR, "**.mm"),
+            path.join(SRC_DIR, "shaders/**.metal")
+        }
 
-        path.join(LIB_DIR, "SDL2-2.0.18/lib/x64/SDL2"),         
-    }
-
-    postbuildcommands {
-        "{COPYFILE} \"" .. path.getabsolute(path.join(LIB_DIR, "SDL2-2.0.18/lib/x64/SDL2.dll")) .. "\" \"%{cfg.buildtarget.directory}/SDL2.dll\"",
-    }
+        links { 
+            "Metal.framework",
+            "MetalPerformanceShaders.framework",
+            "QuartzCore.framework",     
+        }
 
     filter {}
