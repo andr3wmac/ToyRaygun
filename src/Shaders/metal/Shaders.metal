@@ -8,6 +8,13 @@ Metal shaders used for ray tracing
 #include <metal_stdlib>
 #include <simd/simd.h>
 
+#define TRIANGLE_MASK_GEOMETRY 1
+#define TRIANGLE_MASK_LIGHT    2
+
+#define RAY_MASK_PRIMARY   3
+#define RAY_MASK_SHADOW    1
+#define RAY_MASK_SECONDARY 1
+
 #include "src/Renderer/ShaderTypes.h"
 
 using namespace metal;

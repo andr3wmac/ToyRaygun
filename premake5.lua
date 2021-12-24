@@ -43,7 +43,7 @@ project "ToyRaygun"
         "_THREAD_SAFE"
     }
 
-    includedirs {
+    sysincludedirs {
         path.join(LIB_DIR, "bx/include/")  
     }
 
@@ -95,7 +95,13 @@ project "ToyRaygun"
             path.join(SRC_DIR, "shaders/**.metal")
         }
 
+        libdirs { 
+            path.join(LIB_DIR, "bx/lib/osx/")
+        }
+
         links { 
+            "bxRelease",
+
             "Metal.framework",
             "MetalPerformanceShaders.framework",
             "QuartzCore.framework",     

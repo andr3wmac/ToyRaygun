@@ -9,7 +9,7 @@ Implementation for scene creation functions
 #include "Scene.h"
 #include "../Renderer/ShaderTypes.h"
 
-#include "bx/math.h"
+#include <bx/math.h>
 
 bx::Vec3 getTriangleNormal(bx::Vec3 v0, bx::Vec3 v1, bx::Vec3 v2) {
     bx::Vec3 e1 = bx::normalize(bx::sub(v1, v0));
@@ -35,9 +35,10 @@ void Scene::addCube(bx::Vec3 color, float* transformMtx)
         bx::Vec3 vertex = cubeVertices[i];
 
         float transformedVertex[4] = { vertex.x, vertex.y, vertex.z, 1.0f };
-        bx::vec4MulMtx(transformedVertex, transformedVertex, transformMtx);
+        float transformedVertexTest[4];
+        bx::vec4MulMtx(transformedVertexTest, transformedVertex, transformMtx);
 
-        cubeVertices[i] = bx::Vec3(transformedVertex[0], transformedVertex[1], transformedVertex[2]);
+        cubeVertices[i] = bx::Vec3(transformedVertexTest[0], transformedVertexTest[1], transformedVertexTest[2]);
     }
     
     createCubeFace(vertices, normals, colors, cubeVertices, color, 0, 4, 6, 2, false, TRIANGLE_MASK_GEOMETRY);

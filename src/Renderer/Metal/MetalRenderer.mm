@@ -9,7 +9,6 @@ Implementation for platform independent renderer class
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
 #import "MetalRenderer.h"
-#import "Transforms.h"
 #import "ShaderTypes.h"
 #import "Scene.h"
 #include "Shader.h"
@@ -23,6 +22,8 @@ Implementation for platform independent renderer class
 #include <SDL.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
+
+#include <bx/math.h>
 
 using namespace simd;
 

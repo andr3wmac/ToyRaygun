@@ -2,7 +2,7 @@
 #define SCENE_H
 
 #include <vector>
-#include <bx/math.h>
+#include "bx/math.h"
 
 class Scene
 {
