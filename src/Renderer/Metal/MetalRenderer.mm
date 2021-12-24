@@ -9,6 +9,7 @@ Implementation for platform independent renderer class
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
 #import "MetalRenderer.h"
+#import "Transforms.h"
 #import "ShaderTypes.h"
 #import "Scene.h"
 #include "Shader.h"
@@ -22,8 +23,6 @@ Implementation for platform independent renderer class
 #include <SDL.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
-
-#include <bx/math.h>
 
 using namespace simd;
 
@@ -324,7 +323,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     uniforms->light.forward = vector3(0.0f, -1.0f, 0.0f);
     uniforms->light.right = vector3(0.25f, 0.0f, 0.0f);
     uniforms->light.up = vector3(0.0f, 0.0f, 0.25f);
-    uniforms->light.color = vector3(4.0f, 0.0f, 4.0f);
+    uniforms->light.color = vector3(4.0f, 4.0f, 4.0f);
     
     float fieldOfView = 45.0f * (M_PI / 180.0f);
     float aspectRatio = (float)_size.width / (float)_size.height;
