@@ -21,24 +21,24 @@ float3 getTriangleNormal(float3 v0, float3 v1, float3 v2) {
 
 void Scene::addCube(bx::Vec3 color, float* transformMtx)
 {
-    float3 cubeVertices[] = {
-        vector3(-0.5f, -0.5f, -0.5f),
-        vector3( 0.5f, -0.5f, -0.5f),
-        vector3(-0.5f,  0.5f, -0.5f),
-        vector3( 0.5f,  0.5f, -0.5f),
-        vector3(-0.5f, -0.5f,  0.5f),
-        vector3( 0.5f, -0.5f,  0.5f),
-        vector3(-0.5f,  0.5f,  0.5f),
-        vector3( 0.5f,  0.5f,  0.5f),
+    bx::Vec3 cubeVertices[] = {
+        bx::Vec3(-0.5f, -0.5f, -0.5f),
+        bx::Vec3( 0.5f, -0.5f, -0.5f),
+        bx::Vec3(-0.5f,  0.5f, -0.5f),
+        bx::Vec3( 0.5f,  0.5f, -0.5f),
+        bx::Vec3(-0.5f, -0.5f,  0.5f),
+        bx::Vec3( 0.5f, -0.5f,  0.5f),
+        bx::Vec3(-0.5f,  0.5f,  0.5f),
+        bx::Vec3( 0.5f,  0.5f,  0.5f),
     };
     
-    for (int i = 0; i < 8; i++) {
-        float3 vertex = cubeVertices[i];
-        
-        float transformedVertex[4] = { vertex.x, vertex.y, vertex.z, 1.0f };
-        bx::vec4MulMtx(transformedVertex, transformedVertex, transformMtx);
+    for (int i = 0; i < 8; i++)
+    {
+        float vertex[4] = { cubeVertices[i].x, cubeVertices[i].y, cubeVertices[i].z, 1.0f };
+        float transformedVertex[4];
+        bx::vec4MulMtx(transformedVertex, vertex, transformMtx);
 
-        cubeVertices[i] = vector3(transformedVertex[0], transformedVertex[1], transformedVertex[2]);
+        cubeVertices[i] = bx::Vec3(transformedVertex[0], transformedVertex[1], transformedVertex[2]);
     }
     
     createCubeFace(vertices, normals, colors, cubeVertices, color, 0, 4, 6, 2, false, TRIANGLE_MASK_GEOMETRY);
@@ -51,25 +51,24 @@ void Scene::addCube(bx::Vec3 color, float* transformMtx)
 
 void Scene::addPlane(bx::Vec3 color, float* transformMtx)
 {
-    float3 cubeVertices[] = {
-        vector3(-0.5f, -0.5f, -0.5f),
-        vector3( 0.5f, -0.5f, -0.5f),
-        vector3(-0.5f,  0.5f, -0.5f),
-        vector3( 0.5f,  0.5f, -0.5f),
-        vector3(-0.5f, -0.5f,  0.5f),
-        vector3( 0.5f, -0.5f,  0.5f),
-        vector3(-0.5f,  0.5f,  0.5f),
-        vector3( 0.5f,  0.5f,  0.5f),
+    bx::Vec3 cubeVertices[] = {
+        bx::Vec3(-0.5f, -0.5f, -0.5f),
+        bx::Vec3( 0.5f, -0.5f, -0.5f),
+        bx::Vec3(-0.5f,  0.5f, -0.5f),
+        bx::Vec3( 0.5f,  0.5f, -0.5f),
+        bx::Vec3(-0.5f, -0.5f,  0.5f),
+        bx::Vec3( 0.5f, -0.5f,  0.5f),
+        bx::Vec3(-0.5f,  0.5f,  0.5f),
+        bx::Vec3( 0.5f,  0.5f,  0.5f),
     };
     
-    for (int i = 0; i < 8; i++) {
-        float3 vertex = cubeVertices[i];
-        
-        float transformedVertex[4] = { vertex.x, vertex.y, vertex.z, 1.0f };
-        float transformedVertexTest[4];
-        bx::vec4MulMtx(transformedVertexTest, transformedVertex, transformMtx);
+    for (int i = 0; i < 8; i++)
+    {
+        float vertex[4] = { cubeVertices[i].x, cubeVertices[i].y, cubeVertices[i].z, 1.0f };
+        float transformedVertex[4];
+        bx::vec4MulMtx(transformedVertex, vertex, transformMtx);
 
-        cubeVertices[i] = vector3(transformedVertexTest[0], transformedVertexTest[1], transformedVertexTest[2]);
+        cubeVertices[i] = bx::Vec3(transformedVertex[0], transformedVertex[1], transformedVertex[2]);
     }
     
     createCubeFace(vertices, normals, colors, cubeVertices, color, 0, 1, 5, 4, true, TRIANGLE_MASK_GEOMETRY);
@@ -77,25 +76,24 @@ void Scene::addPlane(bx::Vec3 color, float* transformMtx)
 
 void Scene::addAreaLight(bx::Vec3 color, float* transformMtx)
 {
-    float3 cubeVertices[] = {
-        vector3(-0.5f, -0.5f, -0.5f),
-        vector3( 0.5f, -0.5f, -0.5f),
-        vector3(-0.5f,  0.5f, -0.5f),
-        vector3( 0.5f,  0.5f, -0.5f),
-        vector3(-0.5f, -0.5f,  0.5f),
-        vector3( 0.5f, -0.5f,  0.5f),
-        vector3(-0.5f,  0.5f,  0.5f),
-        vector3( 0.5f,  0.5f,  0.5f),
+    bx::Vec3 cubeVertices[] = {
+        bx::Vec3(-0.5f, -0.5f, -0.5f),
+        bx::Vec3( 0.5f, -0.5f, -0.5f),
+        bx::Vec3(-0.5f,  0.5f, -0.5f),
+        bx::Vec3( 0.5f,  0.5f, -0.5f),
+        bx::Vec3(-0.5f, -0.5f,  0.5f),
+        bx::Vec3( 0.5f, -0.5f,  0.5f),
+        bx::Vec3(-0.5f,  0.5f,  0.5f),
+        bx::Vec3( 0.5f,  0.5f,  0.5f),
     };
     
-    for (int i = 0; i < 8; i++) {
-        float3 vertex = cubeVertices[i];
-        
-        float transformedVertex[4] = { vertex.x, vertex.y, vertex.z, 1.0f };
-        float transformedVertexTest[4];
-        bx::vec4MulMtx(transformedVertexTest, transformedVertex, transformMtx);
+    for (int i = 0; i < 8; i++)
+    {
+        float vertex[4] = { cubeVertices[i].x, cubeVertices[i].y, cubeVertices[i].z, 1.0f };
+        float transformedVertex[4];
+        bx::vec4MulMtx(transformedVertex, vertex, transformMtx);
 
-        cubeVertices[i] = vector3(transformedVertexTest[0], transformedVertexTest[1], transformedVertexTest[2]);
+        cubeVertices[i] = bx::Vec3(transformedVertex[0], transformedVertex[1], transformedVertex[2]);
     }
     
     createCubeFace(vertices, normals, colors, cubeVertices, color, 0, 1, 5, 4, true, TRIANGLE_MASK_LIGHT);
@@ -104,7 +102,7 @@ void Scene::addAreaLight(bx::Vec3 color, float* transformMtx)
 void Scene::createCubeFace(std::vector<float3> & vertices,
                     std::vector<float3> & normals,
                     std::vector<float3> & colors,
-                    float3 *cubeVertices,
+                    bx::Vec3* cubeVertices,
                     bx::Vec3 color,
                     unsigned int i0,
                     unsigned int i1,
@@ -113,10 +111,10 @@ void Scene::createCubeFace(std::vector<float3> & vertices,
                     bool inwardNormals,
                     unsigned int triangleMask)
 {
-    float3 v0 = cubeVertices[i0];
-    float3 v1 = cubeVertices[i1];
-    float3 v2 = cubeVertices[i2];
-    float3 v3 = cubeVertices[i3];
+    float3 v0 = { cubeVertices[i0].x, cubeVertices[i0].y, cubeVertices[i0].z };
+    float3 v1 = { cubeVertices[i1].x, cubeVertices[i1].y, cubeVertices[i1].z };
+    float3 v2 = { cubeVertices[i2].x, cubeVertices[i2].y, cubeVertices[i2].z };
+    float3 v3 = { cubeVertices[i3].x, cubeVertices[i3].y, cubeVertices[i3].z };
     
     float3 n0 = getTriangleNormal(v0, v1, v2);
     float3 n1 = getTriangleNormal(v0, v2, v3);

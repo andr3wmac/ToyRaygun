@@ -13,7 +13,7 @@ protected:
     void createCubeFace(std::vector<float3> & vertices,
                         std::vector<float3> & normals,
                         std::vector<float3> & colors,
-                        float3 *cubeVertices,
+                        bx::Vec3 *cubeVertices,
                         bx::Vec3 color,
                         unsigned int i0,
                         unsigned int i1,
