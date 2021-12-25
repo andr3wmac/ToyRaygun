@@ -11,13 +11,6 @@ Implementation for scene creation functions
 #include <iostream>
 #include <bx/math.h>
 
-bx::Vec3 getTriangleNormal(bx::Vec3 v0, bx::Vec3 v1, bx::Vec3 v2) {
-    bx::Vec3 e1 = bx::normalize(bx::sub(v1, v0));
-    bx::Vec3 e2 = bx::normalize(bx::sub(v2, v0));
-    
-    return bx::cross(e1, e2);
-}
-
 static bx::Vec3 cubeVertices[] = {
     bx::Vec3(-0.5f, -0.5f, -0.5f),
     bx::Vec3( 0.5f, -0.5f, -0.5f),
@@ -110,8 +103,8 @@ void Scene::addQuad(bx::Vec3* quadVertices,
                     bool inwardNormals,
                     unsigned int triangleMask)
 {
-    bx::Vec3 normal0 = getTriangleNormal(quadVertices[i0], quadVertices[i1], quadVertices[i2]);
-    bx::Vec3 normal1 = getTriangleNormal(quadVertices[i0], quadVertices[i2], quadVertices[i3]);
+    bx::Vec3 normal0 = bx::calcNormal(quadVertices[i0], quadVertices[i1], quadVertices[i2]);
+    bx::Vec3 normal1 = bx::calcNormal(quadVertices[i0], quadVertices[i2], quadVertices[i3]);
     
     if (inwardNormals) {
         normal0 = bx::neg(normal0);
