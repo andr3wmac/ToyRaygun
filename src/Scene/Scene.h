@@ -7,10 +7,7 @@
 class Scene
 {
 protected:
-    void createCubeFace(std::vector<bx::Vec3>& vertices,
-                        std::vector<bx::Vec3>& normals,
-                        std::vector<bx::Vec3>& colors,
-                        bx::Vec3 *cubeVertices,
+    void addQuad(bx::Vec3* quadVertices,
                         bx::Vec3 color,
                         unsigned int i0,
                         unsigned int i1,

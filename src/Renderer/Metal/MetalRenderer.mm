@@ -9,7 +9,6 @@ Implementation for platform independent renderer class
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
 #import "MetalRenderer.h"
-#import "Transforms.h"
 #import "ShaderTypes.h"
 #import "Scene.h"
 #include "Shader.h"
