@@ -8,15 +8,16 @@ Implementation for scene creation functions
 
 #include "Scene.h"
 #include "ShaderTypes.h"
+#include <iostream>
 #include <bx/math.h>
 
 using namespace simd;
 
-float3 getTriangleNormal(float3 v0, float3 v1, float3 v2) {
-    float3 e1 = normalize(v1 - v0);
-    float3 e2 = normalize(v2 - v0);
+bx::Vec3 getTriangleNormal(bx::Vec3 v0, bx::Vec3 v1, bx::Vec3 v2) {
+    bx::Vec3 e1 = bx::normalize(bx::sub(v1, v0));
+    bx::Vec3 e2 = bx::normalize(bx::sub(v2, v0));
     
-    return cross(e1, e2);
+    return bx::cross(e1, e2);
 }
 
 void Scene::addCube(bx::Vec3 color, float* transformMtx)
@@ -99,9 +100,9 @@ void Scene::addAreaLight(bx::Vec3 color, float* transformMtx)
     createCubeFace(vertices, normals, colors, cubeVertices, color, 0, 1, 5, 4, true, TRIANGLE_MASK_LIGHT);
 }
 
-void Scene::createCubeFace(std::vector<float3> & vertices,
-                    std::vector<float3> & normals,
-                    std::vector<float3> & colors,
+void Scene::createCubeFace(std::vector<bx::Vec3>& vertices,
+                    std::vector<bx::Vec3>& normals,
+                    std::vector<bx::Vec3>& colors,
                     bx::Vec3* cubeVertices,
                     bx::Vec3 color,
                     unsigned int i0,
@@ -111,34 +112,29 @@ void Scene::createCubeFace(std::vector<float3> & vertices,
                     bool inwardNormals,
                     unsigned int triangleMask)
 {
-    float3 v0 = { cubeVertices[i0].x, cubeVertices[i0].y, cubeVertices[i0].z };
-    float3 v1 = { cubeVertices[i1].x, cubeVertices[i1].y, cubeVertices[i1].z };
-    float3 v2 = { cubeVertices[i2].x, cubeVertices[i2].y, cubeVertices[i2].z };
-    float3 v3 = { cubeVertices[i3].x, cubeVertices[i3].y, cubeVertices[i3].z };
-    
-    float3 n0 = getTriangleNormal(v0, v1, v2);
-    float3 n1 = getTriangleNormal(v0, v2, v3);
+    bx::Vec3 normal0 = getTriangleNormal(cubeVertices[i0], cubeVertices[i1], cubeVertices[i2]);
+    bx::Vec3 normal1 = getTriangleNormal(cubeVertices[i0], cubeVertices[i2], cubeVertices[i3]);
     
     if (inwardNormals) {
-        n0 = -n0;
-        n1 = -n1;
+        normal0 = bx::neg(normal0);
+        normal1 = bx::neg(normal1);
     }
     
-    vertices.push_back(v0);
-    vertices.push_back(v1);
-    vertices.push_back(v2);
-    vertices.push_back(v0);
-    vertices.push_back(v2);
-    vertices.push_back(v3);
+    vertices.push_back(cubeVertices[i0]);
+    vertices.push_back(cubeVertices[i1]);
+    vertices.push_back(cubeVertices[i2]);
+    vertices.push_back(cubeVertices[i0]);
+    vertices.push_back(cubeVertices[i2]);
+    vertices.push_back(cubeVertices[i3]);
     
     for (int i = 0; i < 3; i++)
-        normals.push_back(n0);
+        normals.push_back(normal0);
     
     for (int i = 0; i < 3; i++)
-        normals.push_back(n1);
+        normals.push_back(normal1);
     
     for (int i = 0; i < 6; i++)
-        colors.push_back(vector3(color.x, color.y, color.z));
+        colors.push_back(color);
     
     for (int i = 0; i < 2; i++)
         masks.push_back(triangleMask);

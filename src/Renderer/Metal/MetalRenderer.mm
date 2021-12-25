@@ -208,15 +208,23 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     
     _uniformBuffer = [_device newBufferWithLength:uniformBufferSize options:options];
 
+    // Convert 12-byte vec3s to 16-byte float3s for vertex positions.
+    // TODO: Fix memory leak.
+    float3* vertices = new float3[scene->vertices.size()];
+    for (int i = 0; i < scene->vertices.size(); ++i)
+    {
+        vertices[i] = { scene->vertices[i].x, scene->vertices[i].y, scene->vertices[i].z };
+    }
+    
     // Allocate buffers for vertex positions, colors, and normals. Note that each vertex position is a
     // float3, which is a 16 byte aligned type.
     _vertexPositionBuffer = [_device newBufferWithLength:scene->vertices.size() * sizeof(float3) options:options];
-    _vertexColorBuffer = [_device newBufferWithLength:scene->colors.size() * sizeof(float3) options:options];
-    _vertexNormalBuffer = [_device newBufferWithLength:scene->normals.size() * sizeof(float3) options:options];
+    _vertexColorBuffer = [_device newBufferWithLength:scene->colors.size() * sizeof(bx::Vec3) options:options];
+    _vertexNormalBuffer = [_device newBufferWithLength:scene->normals.size() * sizeof(bx::Vec3) options:options];
     _triangleMaskBuffer = [_device newBufferWithLength:scene->masks.size() * sizeof(uint32_t) options:options];
     
     // Copy vertex data into buffers
-    memcpy(_vertexPositionBuffer.contents, &scene->vertices[0], _vertexPositionBuffer.length);
+    memcpy(_vertexPositionBuffer.contents, &vertices[0], _vertexPositionBuffer.length);
     memcpy(_vertexColorBuffer.contents, &scene->colors[0], _vertexColorBuffer.length);
     memcpy(_vertexNormalBuffer.contents, &scene->normals[0], _vertexNormalBuffer.length);
     memcpy(_triangleMaskBuffer.contents, &scene->masks[0], _triangleMaskBuffer.length);

@@ -10,9 +10,9 @@ using namespace simd;
 class Scene
 {
 protected:
-    void createCubeFace(std::vector<float3> & vertices,
-                        std::vector<float3> & normals,
-                        std::vector<float3> & colors,
+    void createCubeFace(std::vector<bx::Vec3>& vertices,
+                        std::vector<bx::Vec3>& normals,
+                        std::vector<bx::Vec3>& colors,
                         bx::Vec3 *cubeVertices,
                         bx::Vec3 color,
                         unsigned int i0,
@@ -23,9 +23,9 @@ protected:
                         unsigned int triangleMask);
     
 public:
-    std::vector<vector_float3> vertices;
-    std::vector<vector_float3> normals;
-    std::vector<vector_float3> colors;
+    std::vector<bx::Vec3> vertices;
+    std::vector<bx::Vec3> normals;
+    std::vector<bx::Vec3> colors;
     std::vector<uint32_t> masks;
     
     void addCube(bx::Vec3 color, float* transform);
