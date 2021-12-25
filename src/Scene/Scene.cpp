@@ -11,8 +11,6 @@ Implementation for scene creation functions
 #include <iostream>
 #include <bx/math.h>
 
-using namespace simd;
-
 bx::Vec3 getTriangleNormal(bx::Vec3 v0, bx::Vec3 v1, bx::Vec3 v2) {
     bx::Vec3 e1 = bx::normalize(bx::sub(v1, v0));
     bx::Vec3 e2 = bx::normalize(bx::sub(v2, v0));

@@ -2,10 +2,7 @@
 #define SCENE_H
 
 #include <vector>
-#include <simd/simd.h>
 #include <bx/math.h>
-
-using namespace simd;
 
 class Scene
 {
