@@ -47,6 +47,10 @@ project "ToyRaygun"
         path.join(LIB_DIR, "bx/include/")  
     }
 
+    includedirs {
+        SRC_DIR
+    }
+
     files { 
         path.join(SRC_DIR, "*.cpp"), 
         path.join(SRC_DIR, "*.h"),
@@ -82,10 +86,15 @@ project "ToyRaygun"
         links { 
             "d3d12",
             "dxgi",
+            "dxguid",
             "d3dcompiler",
 
             path.join(LIB_DIR, "SDL2-2.0.18/lib/x64/SDL2"),
             path.join(LIB_DIR, "bx/lib/x64/bxRelease")          
+        }
+
+        postbuildcommands {
+            "{COPYFILE} \"" .. path.getabsolute(path.join(LIB_DIR, "SDL2-2.0.18/lib/x64/SDL2.dll")) .. "\" \"%{cfg.buildtarget.directory}/SDL2.dll\"",
         }
 
     filter "system:macosx"

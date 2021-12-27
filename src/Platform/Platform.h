@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <SDL.h>
+#undef main
 
 #if defined(_MSC_VER)
 #    if defined(_WIN32)

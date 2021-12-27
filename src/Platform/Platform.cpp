@@ -16,7 +16,7 @@ void Platform::Init()
 #endif
     
     SDL_InitSubSystem(SDL_INIT_VIDEO);
-    window = SDL_CreateWindow("Toy Raygun", -1, -1, 1024, 768, SDL_WINDOW_ALLOW_HIGHDPI);
+    window = SDL_CreateWindow("Toy Raygun", 32, 32, 1024, 768, SDL_WINDOW_ALLOW_HIGHDPI);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
 }
 
