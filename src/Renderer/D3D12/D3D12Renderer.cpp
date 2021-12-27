@@ -87,17 +87,18 @@ void D3D12Renderer::LoadScene(Scene* scene)
     // Setup camera.
     {
         // Initialize the view and projection inverse matrices.
-        m_eye = { 0.0f, 2.0f, -5.0f, 1.0f };
-        m_at = { 0.0f, 0.0f, 0.0f, 1.0f };
+        m_eye = { 0.0f, 1.0f, 3.38, 1.0f };
+        m_at = { 0.0f, 1.0f, -1.0f, 1.0f };
         XMVECTOR right = { 1.0f, 0.0f, 0.0f, 0.0f };
 
         XMVECTOR direction = XMVector4Normalize(m_at - m_eye);
-        m_up = XMVector3Normalize(XMVector3Cross(direction, right));
+        //m_up = XMVector3Normalize(XMVector3Cross(direction, right));
+        m_up = { 0.0f, 1.0f, 0.0f, 1.0f };
 
         // Rotate camera around Y axis.
-        XMMATRIX rotate = XMMatrixRotationY(XMConvertToRadians(45.0f));
-        m_eye = XMVector3Transform(m_eye, rotate);
-        m_up = XMVector3Transform(m_up, rotate);
+        //XMMATRIX rotate = XMMatrixRotationY(XMConvertToRadians(45.0f));
+        //m_eye = XMVector3Transform(m_eye, rotate);
+        //m_up = XMVector3Transform(m_up, rotate);
         
         UpdateCameraMatrices();
     }
@@ -125,7 +126,34 @@ void D3D12Renderer::LoadScene(Scene* scene)
         sceneCB = m_sceneCB[frameIndex];
     }
 
-    CreateDeviceDependentResources();
+    // Initialize raytracing pipeline.
+
+    // Create raytracing interfaces: raytracing device and commandlist.
+    CreateRaytracingInterfaces();
+
+    // Create root signatures for the shaders.
+    CreateRootSignatures();
+
+    // Create a raytracing pipeline state object which defines the binding of shaders, state and resources to be used during raytracing.
+    CreateRaytracingPipelineStateObject();
+
+    // Create a heap for descriptors.
+    CreateDescriptorHeap();
+
+    // Build geometry to be used in the sample.
+    BuildGeometry(scene);
+
+    // Build raytracing acceleration structures from the generated geometry.
+    BuildAccelerationStructures();
+
+    // Create constant buffers for the geometry and the scene.
+    CreateConstantBuffers();
+
+    // Build shader tables, which define shaders and their local root arguments.
+    BuildShaderTables();
+
+    // Create an output 2D texture to store the raytracing result to.
+    CreateRaytracingOutputResource();
     CreateWindowSizeDependentResources();
 }
 
@@ -154,39 +182,6 @@ void D3D12Renderer::CreateConstantBuffers()
     // We don't unmap this until the app closes. Keeping buffer mapped for the lifetime of the resource is okay.
     CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
     ThrowIfFailed(m_perFrameConstants->Map(0, nullptr, reinterpret_cast<void**>(&m_mappedConstantData)));
-}
-
-// Create resources that depend on the device.
-void D3D12Renderer::CreateDeviceDependentResources()
-{
-    // Initialize raytracing pipeline.
-
-    // Create raytracing interfaces: raytracing device and commandlist.
-    CreateRaytracingInterfaces();
-
-    // Create root signatures for the shaders.
-    CreateRootSignatures();
-
-    // Create a raytracing pipeline state object which defines the binding of shaders, state and resources to be used during raytracing.
-    CreateRaytracingPipelineStateObject();
-
-    // Create a heap for descriptors.
-    CreateDescriptorHeap();
-
-    // Build geometry to be used in the sample.
-    BuildGeometry();
-
-    // Build raytracing acceleration structures from the generated geometry.
-    BuildAccelerationStructures();
-
-    // Create constant buffers for the geometry and the scene.
-    CreateConstantBuffers();
-
-    // Build shader tables, which define shaders and their local root arguments.
-    BuildShaderTables();
-
-    // Create an output 2D texture to store the raytracing result to.
-    CreateRaytracingOutputResource();
 }
 
 void D3D12Renderer::SerializeAndCreateRaytracingRootSignature(D3D12_ROOT_SIGNATURE_DESC& desc, ComPtr<ID3D12RootSignature>* rootSig)
@@ -372,73 +367,32 @@ void D3D12Renderer::CreateDescriptorHeap()
 }
 
 // Build geometry used in the sample.
-void D3D12Renderer::BuildGeometry()
+void D3D12Renderer::BuildGeometry(Scene* scene)
 {
     auto device = m_deviceResources->GetD3DDevice();
 
-    // Cube indices.
-    Index indices[] =
+    std::vector<Index> indices;
+    for (int i = 0; i < scene->indexBuffer.size(); ++i)
     {
-        3,1,0,
-        2,1,3,
+        indices.push_back(scene->indexBuffer[i]);
+    }
 
-        6,4,5,
-        7,4,6,
-
-        11,9,8,
-        10,9,11,
-
-        14,12,13,
-        15,12,14,
-
-        19,17,16,
-        18,17,19,
-
-        22,20,21,
-        23,20,22
-    };
-
-    // Cube vertices positions and corresponding triangle normals.
-    Vertex vertices[] =
+    std::vector<Vertex> vertices;
+    for (int i = 0; i < scene->vertexBuffer.size(); ++i)
     {
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+        vertices.push_back({ 
+            XMFLOAT3(scene->vertexBuffer[i].x, scene->vertexBuffer[i].y, scene->vertexBuffer[i].z), 
+            XMFLOAT3(scene->normalBuffer[i].x, scene->normalBuffer[i].y, scene->normalBuffer[i].z)
+        });
+    }
 
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-    };
-
-    AllocateUploadBuffer(device, indices, sizeof(indices), &m_indexBuffer.resource);
-    AllocateUploadBuffer(device, vertices, sizeof(vertices), &m_vertexBuffer.resource);
+    AllocateUploadBuffer(device, &indices[0], sizeof(Index) * indices.size(), &m_indexBuffer.resource);
+    AllocateUploadBuffer(device, &vertices[0], sizeof(Vertex) * vertices.size(), &m_vertexBuffer.resource);
 
     // Vertex buffer is passed to the shader along with index buffer as a descriptor table.
     // Vertex buffer descriptor must follow index buffer descriptor in the descriptor heap.
-    UINT descriptorIndexIB = CreateBufferSRV(&m_indexBuffer, sizeof(indices)/4, 0);
-    UINT descriptorIndexVB = CreateBufferSRV(&m_vertexBuffer, ARRAYSIZE(vertices), sizeof(vertices[0]));
+    UINT descriptorIndexIB = CreateBufferSRV(&m_indexBuffer, indices.size() / 4, 0);
+    UINT descriptorIndexVB = CreateBufferSRV(&m_vertexBuffer, vertices.size(), sizeof(Vertex));
     ThrowIfFalse(descriptorIndexVB == descriptorIndexIB + 1, "Vertex Buffer descriptor index must follow that of Index Buffer descriptor index!");
 }
 

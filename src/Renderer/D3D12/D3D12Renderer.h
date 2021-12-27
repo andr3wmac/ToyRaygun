@@ -136,7 +136,6 @@ private:
     void RecreateD3D();
     void DoRaytracing();
     void CreateConstantBuffers();
-    void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
     void ReleaseDeviceDependentResources();
     void ReleaseWindowSizeDependentResources();
@@ -147,7 +146,7 @@ private:
     void CreateRaytracingPipelineStateObject();
     void CreateDescriptorHeap();
     void CreateRaytracingOutputResource();
-    void BuildGeometry();
+    void BuildGeometry(Scene* scene);
     void BuildAccelerationStructures();
     void BuildShaderTables();
     void UpdateForSizeChange(UINT clientWidth, UINT clientHeight);
