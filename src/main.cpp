@@ -4,7 +4,7 @@
  */
 
 #include "Platform/Platform.h"
-#include "Renderer/ShaderTypes.h"
+#include "Renderer/Renderer.h"
 #include "Scene/Scene.h"
 
 #include <bx/math.h>

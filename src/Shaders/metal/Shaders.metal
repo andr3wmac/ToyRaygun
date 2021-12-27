@@ -8,9 +8,38 @@ Metal shaders used for ray tracing
 #include <metal_stdlib>
 #include <simd/simd.h>
 
-#include "src/Renderer/ShaderTypes.h"
-
 using namespace metal;
+
+#define TRIANGLE_MASK_GEOMETRY 1
+#define TRIANGLE_MASK_LIGHT    2
+
+#define RAY_MASK_PRIMARY   3
+#define RAY_MASK_SHADOW    1
+#define RAY_MASK_SECONDARY 1
+
+struct Camera {
+    packed_float3 position;
+    packed_float3 right;
+    packed_float3 up;
+    packed_float3 forward;
+};
+
+struct AreaLight {
+    packed_float3 position;
+    packed_float3 forward;
+    packed_float3 right;
+    packed_float3 up;
+    packed_float3 color;
+};
+
+struct Uniforms
+{
+    unsigned int width;
+    unsigned int height;
+    unsigned int frameIndex;
+    Camera camera;
+    AreaLight light;
+};
 
 // Represents a three dimensional ray which will be intersected with the scene. The ray type
 // is customized using properties of the MPSRayIntersector.

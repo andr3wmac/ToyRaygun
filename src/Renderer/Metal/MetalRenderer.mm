@@ -9,8 +9,8 @@ Implementation for platform independent renderer class
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
 #import "MetalRenderer.h"
-#import "ShaderTypes.h"
-#import "Scene.h"
+#include "Scene.h"
+#include "Renderer.h"
 #include "Shader.h"
 
 #include <fstream>
@@ -321,24 +321,24 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 
     Uniforms *uniforms = (Uniforms *)((char *)_uniformBuffer.contents + _uniformBufferOffset);
 
-    uniforms->camera.position = vector3(0.0f, 1.0f, 3.38f);
-    uniforms->camera.forward = vector3(0.0f, 0.0f, -1.0f);
-    uniforms->camera.right = vector3(1.0f, 0.0f, 0.0f);
-    uniforms->camera.up = vector3(0.0f, 1.0f, 0.0f);
+    uniforms->camera.position = bx::Vec3(0.0f, 1.0f, 3.38f);
+    uniforms->camera.forward = bx::Vec3(0.0f, 0.0f, -1.0f);
+    uniforms->camera.right = bx::Vec3(1.0f, 0.0f, 0.0f);
+    uniforms->camera.up = bx::Vec3(0.0f, 1.0f, 0.0f);
     
-    uniforms->light.position = vector3(0.0f, 1.98f, 0.0f);
-    uniforms->light.forward = vector3(0.0f, -1.0f, 0.0f);
-    uniforms->light.right = vector3(0.25f, 0.0f, 0.0f);
-    uniforms->light.up = vector3(0.0f, 0.0f, 0.25f);
-    uniforms->light.color = vector3(4.0f, 4.0f, 4.0f);
+    uniforms->light.position = bx::Vec3(0.0f, 1.98f, 0.0f);
+    uniforms->light.forward = bx::Vec3(0.0f, -1.0f, 0.0f);
+    uniforms->light.right = bx::Vec3(0.25f, 0.0f, 0.0f);
+    uniforms->light.up = bx::Vec3(0.0f, 0.0f, 0.25f);
+    uniforms->light.color = bx::Vec3(4.0f, 4.0f, 4.0f);
     
     float fieldOfView = 45.0f * (M_PI / 180.0f);
     float aspectRatio = (float)_size.width / (float)_size.height;
     float imagePlaneHeight = tanf(fieldOfView / 2.0f);
     float imagePlaneWidth = aspectRatio * imagePlaneHeight;
     
-    uniforms->camera.right *= imagePlaneWidth;
-    uniforms->camera.up *= imagePlaneHeight;
+    uniforms->camera.right = bx::mul(uniforms->camera.right, imagePlaneWidth);
+    uniforms->camera.up = bx::mul(uniforms->camera.up, imagePlaneHeight);
     
     uniforms->width = (unsigned int)_size.width;
     uniforms->height = (unsigned int)_size.height;

@@ -7,7 +7,7 @@ Implementation for scene creation functions
 
 
 #include "Scene.h"
-#include "ShaderTypes.h"
+#include "../Renderer/Renderer.h"
 #include <iostream>
 #include <bx/math.h>
 
