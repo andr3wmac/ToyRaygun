@@ -75,7 +75,8 @@ project "ToyRaygun"
     filter "system:windows"
         includedirs {
             path.join(LIB_DIR, "SDL2-2.0.18/include/"),  
-            path.join(LIB_DIR, "bx/include/compat/msvc/")  
+            path.join(LIB_DIR, "bx/include/compat/msvc/"),
+            path.join(LIB_DIR, "DirectXShaderCompiler/inc/")  
         }
 
         files {
@@ -90,11 +91,13 @@ project "ToyRaygun"
             "d3dcompiler",
 
             path.join(LIB_DIR, "SDL2-2.0.18/lib/x64/SDL2"),
-            path.join(LIB_DIR, "bx/lib/x64/bxRelease")          
+            path.join(LIB_DIR, "bx/lib/x64/bxRelease"),
+            path.join(LIB_DIR, "DirectXShaderCompiler/lib/x64/dxcompiler")              
         }
 
         postbuildcommands {
             "{COPYFILE} \"" .. path.getabsolute(path.join(LIB_DIR, "SDL2-2.0.18/lib/x64/SDL2.dll")) .. "\" \"%{cfg.buildtarget.directory}/SDL2.dll\"",
+            "{COPYFILE} \"" .. path.getabsolute(path.join(LIB_DIR, "DirectXShaderCompiler/bin/x64/dxcompiler.dll")) .. "\" \"%{cfg.buildtarget.directory}/dxcompiler.dll\"",
         }
 
     filter "system:macosx"

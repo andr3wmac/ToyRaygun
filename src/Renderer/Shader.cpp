@@ -7,21 +7,6 @@
 #include <ostream>
 #include <iostream>
 
-void Shader::Init(Platform* platform)
-{
-
-}
-
-void Shader::Destroy()
-{
-
-}
-
-void Shader::RenderFrame()
-{
-
-}
-
 // Includes skipped by our processing.
 std::vector<std::string> Shader::kSkipShaderIncludes
 {
@@ -74,4 +59,29 @@ std::string Shader::loadAndProcessShader(std::string filename)
     }
     
     return finalShader.str();
+}
+
+bool Shader::Load(const char* path, bool preprocess)
+{
+    return false;
+}
+
+void Shader::Preprocess()
+{
+
+}
+
+bool Shader::Compile()
+{
+    return false;
+}
+
+void* Shader::GetBufferPointer()
+{
+    return nullptr;
+}
+
+size_t Shader::GetBufferSize()
+{
+    return -1;
 }

@@ -11,10 +11,12 @@ public:
     static std::vector<std::string> kSkipShaderIncludes;
     static std::string loadAndProcessShader(std::string path);
 
-    virtual void Init(Platform* platform);
-    virtual void Destroy();
-    
-    virtual void RenderFrame();
+    virtual bool Load(const char* path, bool preprocess = false);
+    virtual void Preprocess();
+    virtual bool Compile();
+
+    virtual void* GetBufferPointer();
+    virtual size_t GetBufferSize();
 };
 
 #endif
