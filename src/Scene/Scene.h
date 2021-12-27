@@ -7,19 +7,19 @@
 class Scene
 {
 protected:
-    void addGeometry(bx::Vec3* _vertices,
-                     uint32_t* _indices,
-                     int _triangleCount,
+    void addGeometry(bx::Vec3* vertices,
+                     uint32_t* indices,
+                     int triangleCount,
                      float* transformMtx,
-                     bx::Vec3 _color,
-                     unsigned int _mask);
+                     bx::Vec3 color,
+                     unsigned int mask);
     
 public:
-    std::vector<bx::Vec3> vertices;
-    std::vector<uint32_t> indices;
-    std::vector<bx::Vec3> normals;
-    std::vector<bx::Vec3> colors;
-    std::vector<uint32_t> masks;
+    std::vector<bx::Vec3> vertexBuffer;
+    std::vector<uint32_t> indexBuffer;
+    std::vector<bx::Vec3> normalBuffer;
+    std::vector<bx::Vec3> colorBuffer;
+    std::vector<uint32_t> maskBuffer;
     
     void addCube(bx::Vec3 color, float* transform);
     void addPlane(bx::Vec3 color, float* transform);

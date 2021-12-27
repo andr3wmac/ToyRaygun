@@ -100,30 +100,30 @@ bx::Vec3 applyTransform(bx::Vec3 input, float* transformMtx, float w)
     return bx::Vec3(transformedPoint[0], transformedPoint[1], transformedPoint[2]);
 }
 
-void Scene::addGeometry(bx::Vec3* _vertices,
-                        uint32_t* _indices,
-                        int _triangleCount,
+void Scene::addGeometry(bx::Vec3* vertices,
+                        uint32_t* indices,
+                        int triangleCount,
                         float* transformMtx,
-                        bx::Vec3 _color,
-                        unsigned int _mask)
+                        bx::Vec3 color,
+                        unsigned int mask)
 {
-    for (int i = 0; i < _triangleCount; ++i)
+    for (int i = 0; i < triangleCount; ++i)
     {
-        uint32_t idx[] = { _indices[(i * 3) + 0], _indices[(i * 3) + 1], _indices[(i * 3) + 2] };
-        bx::Vec3 normal = bx::calcNormal(_vertices[idx[0]], _vertices[idx[1]], _vertices[idx[2]]);
+        uint32_t idx[] = { indices[(i * 3) + 0], indices[(i * 3) + 1], indices[(i * 3) + 2] };
+        bx::Vec3 normal = bx::calcNormal(vertices[idx[0]], vertices[idx[1]], vertices[idx[2]]);
         
         for (int j = 0; j < 3; ++j)
         {
-            bx::Vec3 xfrmVert = applyTransform(_vertices[idx[j]], transformMtx, 1.0f);
+            bx::Vec3 xfrmVert = applyTransform(vertices[idx[j]], transformMtx, 1.0f);
             bx::Vec3 xfrmNormal = applyTransform(normal, transformMtx, 0.0f);
             
-            vertices.push_back(xfrmVert);
-            indices.push_back(vertices.size() - 1);
-            normals.push_back(xfrmNormal);
-            colors.push_back(_color);
+            vertexBuffer.push_back(xfrmVert);
+            indexBuffer.push_back(vertexBuffer.size() - 1);
+            normalBuffer.push_back(xfrmNormal);
+            colorBuffer.push_back(color);
         }
         
         // Masks is per-triangle, not per vertex.
-        masks.push_back(_mask);
+        maskBuffer.push_back(mask);
     }
 }

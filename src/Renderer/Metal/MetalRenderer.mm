@@ -210,26 +210,26 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 
     // Convert 12-byte vec3s to 16-byte float3s for vertex positions.
     // TODO: Fix memory leak.
-    float3* vertices = new float3[scene->vertices.size()];
-    for (int i = 0; i < scene->vertices.size(); ++i)
+    float3* vertices = new float3[scene->vertexBuffer.size()];
+    for (int i = 0; i < scene->vertexBuffer.size(); ++i)
     {
-        vertices[i] = { scene->vertices[i].x, scene->vertices[i].y, scene->vertices[i].z };
+        vertices[i] = { scene->vertexBuffer[i].x, scene->vertexBuffer[i].y, scene->vertexBuffer[i].z };
     }
     
     // Allocate buffers for vertex positions, colors, and normals. Note that each vertex position is a
     // float3, which is a 16 byte aligned type.
-    _vertexPositionBuffer = [_device newBufferWithLength:scene->vertices.size() * sizeof(float3) options:options];
-    _indexBuffer = [_device newBufferWithLength:scene->indices.size() * sizeof(uint32_t) options:options];
-    _vertexColorBuffer = [_device newBufferWithLength:scene->colors.size() * sizeof(bx::Vec3) options:options];
-    _vertexNormalBuffer = [_device newBufferWithLength:scene->normals.size() * sizeof(bx::Vec3) options:options];
-    _triangleMaskBuffer = [_device newBufferWithLength:scene->masks.size() * sizeof(uint32_t) options:options];
+    _vertexPositionBuffer = [_device newBufferWithLength:scene->vertexBuffer.size() * sizeof(float3) options:options];
+    _indexBuffer = [_device newBufferWithLength:scene->indexBuffer.size() * sizeof(uint32_t) options:options];
+    _vertexColorBuffer = [_device newBufferWithLength:scene->colorBuffer.size() * sizeof(bx::Vec3) options:options];
+    _vertexNormalBuffer = [_device newBufferWithLength:scene->normalBuffer.size() * sizeof(bx::Vec3) options:options];
+    _triangleMaskBuffer = [_device newBufferWithLength:scene->maskBuffer.size() * sizeof(uint32_t) options:options];
     
     // Copy vertex data into buffers
     memcpy(_vertexPositionBuffer.contents, &vertices[0], _vertexPositionBuffer.length);
-    memcpy(_indexBuffer.contents, &scene->indices[0], _indexBuffer.length);
-    memcpy(_vertexColorBuffer.contents, &scene->colors[0], _vertexColorBuffer.length);
-    memcpy(_vertexNormalBuffer.contents, &scene->normals[0], _vertexNormalBuffer.length);
-    memcpy(_triangleMaskBuffer.contents, &scene->masks[0], _triangleMaskBuffer.length);
+    memcpy(_indexBuffer.contents, &scene->indexBuffer[0], _indexBuffer.length);
+    memcpy(_vertexColorBuffer.contents, &scene->colorBuffer[0], _vertexColorBuffer.length);
+    memcpy(_vertexNormalBuffer.contents, &scene->normalBuffer[0], _vertexNormalBuffer.length);
+    memcpy(_triangleMaskBuffer.contents, &scene->maskBuffer[0], _triangleMaskBuffer.length);
     
     // When using managed buffers, we need to indicate that we modified the buffer so that the GPU
     // copy can be updated
@@ -254,7 +254,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     _accelerationStructure.vertexBuffer = _vertexPositionBuffer;
     _accelerationStructure.indexBuffer = _indexBuffer;
     _accelerationStructure.maskBuffer = _triangleMaskBuffer;
-    _accelerationStructure.triangleCount = scene->vertices.size() / 3;
+    _accelerationStructure.triangleCount = scene->indexBuffer.size() / 3;
     
     [_accelerationStructure rebuild];
 }
