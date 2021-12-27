@@ -53,6 +53,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     MPSRayIntersector *_intersector;
     
     id <MTLBuffer> _vertexPositionBuffer;
+    id <MTLBuffer> _indexBuffer;
     id <MTLBuffer> _vertexNormalBuffer;
     id <MTLBuffer> _vertexColorBuffer;
     id <MTLBuffer> _rayBuffer;
@@ -218,12 +219,14 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // Allocate buffers for vertex positions, colors, and normals. Note that each vertex position is a
     // float3, which is a 16 byte aligned type.
     _vertexPositionBuffer = [_device newBufferWithLength:scene->vertices.size() * sizeof(float3) options:options];
+    _indexBuffer = [_device newBufferWithLength:scene->indices.size() * sizeof(uint32_t) options:options];
     _vertexColorBuffer = [_device newBufferWithLength:scene->colors.size() * sizeof(bx::Vec3) options:options];
     _vertexNormalBuffer = [_device newBufferWithLength:scene->normals.size() * sizeof(bx::Vec3) options:options];
     _triangleMaskBuffer = [_device newBufferWithLength:scene->masks.size() * sizeof(uint32_t) options:options];
     
     // Copy vertex data into buffers
     memcpy(_vertexPositionBuffer.contents, &vertices[0], _vertexPositionBuffer.length);
+    memcpy(_indexBuffer.contents, &scene->indices[0], _indexBuffer.length);
     memcpy(_vertexColorBuffer.contents, &scene->colors[0], _vertexColorBuffer.length);
     memcpy(_vertexNormalBuffer.contents, &scene->normals[0], _vertexNormalBuffer.length);
     memcpy(_triangleMaskBuffer.contents, &scene->masks[0], _triangleMaskBuffer.length);
@@ -232,6 +235,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // copy can be updated
 #if !TARGET_OS_IPHONE
     [_vertexPositionBuffer didModifyRange:NSMakeRange(0, _vertexPositionBuffer.length)];
+    [_indexBuffer didModifyRange:NSMakeRange(0, _indexBuffer.length)];
     [_vertexColorBuffer didModifyRange:NSMakeRange(0, _vertexColorBuffer.length)];
     [_vertexNormalBuffer didModifyRange:NSMakeRange(0, _vertexNormalBuffer.length)];
     [_triangleMaskBuffer didModifyRange:NSMakeRange(0, _triangleMaskBuffer.length)];
@@ -248,6 +252,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     _accelerationStructure = [[MPSTriangleAccelerationStructure alloc] initWithDevice:_device];
     
     _accelerationStructure.vertexBuffer = _vertexPositionBuffer;
+    _accelerationStructure.indexBuffer = _indexBuffer;
     _accelerationStructure.maskBuffer = _triangleMaskBuffer;
     _accelerationStructure.triangleCount = scene->vertices.size() / 3;
     

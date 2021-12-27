@@ -35,21 +35,27 @@ void Scene::addCube(bx::Vec3 color, float* transformMtx)
         cubeVertices[7]
     };
     
-    for (int i = 0; i < 8; i++)
-    {
-        float vertex[4] = { verts[i].x, verts[i].y, verts[i].z, 1.0f };
-        float transformedVertex[4];
-        bx::vec4MulMtx(transformedVertex, vertex, transformMtx);
-
-        verts[i] = bx::Vec3(transformedVertex[0], transformedVertex[1], transformedVertex[2]);
-    }
+    uint32_t tris[] = {
+        0, 4, 6,
+        0, 6, 2,
+        
+        1, 3, 7,
+        1, 7, 5,
+        
+        0, 1, 5,
+        0, 5, 4,
+        
+        2, 6, 7,
+        2, 7, 3,
+        
+        0, 2, 3,
+        0, 3, 1,
+        
+        4, 5, 7,
+        4, 7, 6
+    };
     
-    addQuad(verts, color, 0, 4, 6, 2, false, TRIANGLE_MASK_GEOMETRY);
-    addQuad(verts, color, 1, 3, 7, 5, false, TRIANGLE_MASK_GEOMETRY);
-    addQuad(verts, color, 0, 1, 5, 4, false, TRIANGLE_MASK_GEOMETRY);
-    addQuad(verts, color, 2, 6, 7, 3, false, TRIANGLE_MASK_GEOMETRY);
-    addQuad(verts, color, 0, 2, 3, 1, false, TRIANGLE_MASK_GEOMETRY);
-    addQuad(verts, color, 4, 5, 7, 6, false, TRIANGLE_MASK_GEOMETRY);
+    addGeometry(verts, tris, 12, transformMtx, color, TRIANGLE_MASK_GEOMETRY);
 }
 
 void Scene::addPlane(bx::Vec3 color, float* transformMtx)
@@ -61,16 +67,12 @@ void Scene::addPlane(bx::Vec3 color, float* transformMtx)
         cubeVertices[4]
     };
     
-    for (int i = 0; i < 4; i++)
-    {
-        float vertex[4] = { verts[i].x, verts[i].y, verts[i].z, 1.0f };
-        float transformedVertex[4];
-        bx::vec4MulMtx(transformedVertex, vertex, transformMtx);
-
-        verts[i] = bx::Vec3(transformedVertex[0], transformedVertex[1], transformedVertex[2]);
-    }
+    uint32_t tris[] = {
+        0, 2, 1,
+        0, 3, 2,
+    };
     
-    addQuad(verts, color, 0, 1, 2, 3, true, TRIANGLE_MASK_GEOMETRY);
+    addGeometry(verts, tris, 2, transformMtx, color, TRIANGLE_MASK_GEOMETRY);
 }
 
 void Scene::addAreaLight(bx::Vec3 color, float* transformMtx)
@@ -82,51 +84,46 @@ void Scene::addAreaLight(bx::Vec3 color, float* transformMtx)
         cubeVertices[4]
     };
     
-    for (int i = 0; i < 4; i++)
-    {
-        float vertex[4] = { verts[i].x, verts[i].y, verts[i].z, 1.0f };
-        float transformedVertex[4];
-        bx::vec4MulMtx(transformedVertex, vertex, transformMtx);
-
-        verts[i] = bx::Vec3(transformedVertex[0], transformedVertex[1], transformedVertex[2]);
-    }
+    uint32_t tris[] = {
+        0, 2, 1,
+        0, 3, 2,
+    };
     
-    addQuad(verts, color, 0, 1, 2, 3, true, TRIANGLE_MASK_LIGHT);
+    addGeometry(verts, tris, 2, transformMtx, color, TRIANGLE_MASK_LIGHT);
 }
 
-void Scene::addQuad(bx::Vec3* quadVertices,
-                    bx::Vec3 color,
-                    unsigned int i0,
-                    unsigned int i1,
-                    unsigned int i2,
-                    unsigned int i3,
-                    bool inwardNormals,
-                    unsigned int triangleMask)
+bx::Vec3 applyTransform(bx::Vec3 input, float* transformMtx, float w)
 {
-    bx::Vec3 normal0 = bx::calcNormal(quadVertices[i0], quadVertices[i1], quadVertices[i2]);
-    bx::Vec3 normal1 = bx::calcNormal(quadVertices[i0], quadVertices[i2], quadVertices[i3]);
-    
-    if (inwardNormals) {
-        normal0 = bx::neg(normal0);
-        normal1 = bx::neg(normal1);
+    float point[4] = { input.x, input.y, input.z, w };
+    float transformedPoint[4];
+    bx::vec4MulMtx(transformedPoint, point, transformMtx);
+    return bx::Vec3(transformedPoint[0], transformedPoint[1], transformedPoint[2]);
+}
+
+void Scene::addGeometry(bx::Vec3* _vertices,
+                        uint32_t* _indices,
+                        int _triangleCount,
+                        float* transformMtx,
+                        bx::Vec3 _color,
+                        unsigned int _mask)
+{
+    for (int i = 0; i < _triangleCount; ++i)
+    {
+        uint32_t idx[] = { _indices[(i * 3) + 0], _indices[(i * 3) + 1], _indices[(i * 3) + 2] };
+        bx::Vec3 normal = bx::calcNormal(_vertices[idx[0]], _vertices[idx[1]], _vertices[idx[2]]);
+        
+        for (int j = 0; j < 3; ++j)
+        {
+            bx::Vec3 xfrmVert = applyTransform(_vertices[idx[j]], transformMtx, 1.0f);
+            bx::Vec3 xfrmNormal = applyTransform(normal, transformMtx, 0.0f);
+            
+            vertices.push_back(xfrmVert);
+            indices.push_back(vertices.size() - 1);
+            normals.push_back(xfrmNormal);
+            colors.push_back(_color);
+        }
+        
+        // Masks is per-triangle, not per vertex.
+        masks.push_back(_mask);
     }
-    
-    vertices.push_back(quadVertices[i0]);
-    vertices.push_back(quadVertices[i1]);
-    vertices.push_back(quadVertices[i2]);
-    vertices.push_back(quadVertices[i0]);
-    vertices.push_back(quadVertices[i2]);
-    vertices.push_back(quadVertices[i3]);
-    
-    for (int i = 0; i < 3; i++)
-        normals.push_back(normal0);
-    
-    for (int i = 0; i < 3; i++)
-        normals.push_back(normal1);
-    
-    for (int i = 0; i < 6; i++)
-        colors.push_back(color);
-    
-    for (int i = 0; i < 2; i++)
-        masks.push_back(triangleMask);
 }

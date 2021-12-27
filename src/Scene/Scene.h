@@ -7,17 +7,16 @@
 class Scene
 {
 protected:
-    void addQuad(bx::Vec3* quadVertices,
-                        bx::Vec3 color,
-                        unsigned int i0,
-                        unsigned int i1,
-                        unsigned int i2,
-                        unsigned int i3,
-                        bool inwardNormals,
-                        unsigned int triangleMask);
+    void addGeometry(bx::Vec3* _vertices,
+                     uint32_t* _indices,
+                     int _triangleCount,
+                     float* transformMtx,
+                     bx::Vec3 _color,
+                     unsigned int _mask);
     
 public:
     std::vector<bx::Vec3> vertices;
+    std::vector<uint32_t> indices;
     std::vector<bx::Vec3> normals;
     std::vector<bx::Vec3> colors;
     std::vector<uint32_t> masks;
