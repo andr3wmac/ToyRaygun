@@ -1,7 +1,7 @@
 #ifndef _SHADER_H_
 #define _SHADER_H_
 
-#include "../Platform/Platform.h"
+#include "Platform/Platform.h"
 #include <string>
 #include <vector>
 

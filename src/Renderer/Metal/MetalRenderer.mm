@@ -209,7 +209,6 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     _uniformBuffer = [_device newBufferWithLength:uniformBufferSize options:options];
 
     // Convert 12-byte vec3s to 16-byte float3s for vertex positions.
-    // TODO: Fix memory leak.
     float3* vertices = new float3[scene->vertexBuffer.size()];
     for (int i = 0; i < scene->vertexBuffer.size(); ++i)
     {
@@ -229,7 +228,10 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     memcpy(_indexBuffer.contents, &scene->indexBuffer[0], _indexBuffer.length);
     memcpy(_vertexColorBuffer.contents, &scene->colorBuffer[0], _vertexColorBuffer.length);
     memcpy(_vertexNormalBuffer.contents, &scene->normalBuffer[0], _vertexNormalBuffer.length);
-    memcpy(_triangleMaskBuffer.contents, &scene->maskBuffer[0], _triangleMaskBuffer.length);
+    memcpy(_triangleMaskBuffer.contents, &scene->maskBuffer[0], _triangleMaskBuffer.length);;
+    
+    // Cleanup.
+    delete[] vertices;
     
     // When using managed buffers, we need to indicate that we modified the buffer so that the GPU
     // copy can be updated

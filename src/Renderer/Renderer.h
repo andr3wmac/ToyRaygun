@@ -1,8 +1,8 @@
 #ifndef _RENDERERS_BASE_
 #define _RENDERERS_BASE_
 
-#include "../Platform/Platform.h"
-#include "../Scene/Scene.h"
+#include "Platform/Platform.h"
+#include "Scene/Scene.h"
 #include <bx/math.h>
 
 #define TRIANGLE_MASK_GEOMETRY 1
