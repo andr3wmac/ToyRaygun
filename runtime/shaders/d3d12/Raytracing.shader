@@ -1,16 +1,11 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
 
-#ifndef RAYTRACING_HLSL
-#define RAYTRACING_HLSL
+ * This shader is based on D3D12 Raytracing Sample from:
+     https://github.com/microsoft/DirectX-Graphics-Samples/
+ * By Microsoft
+*/
 
 #define MATERIAL_DEFAULT  0
 #define MATERIAL_EMISSIVE 1
@@ -285,5 +280,3 @@ void MyMissShader(inout RayPayload payload)
     float4 background = float4(0.0f, 0.0f, 0.0f, 1.0f);
     payload.color = background;
 }
-
-#endif // RAYTRACING_HLSL
