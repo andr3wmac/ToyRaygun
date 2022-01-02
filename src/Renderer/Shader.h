@@ -4,12 +4,16 @@
 #include "Platform/Platform.h"
 #include <string>
 #include <vector>
+#include <sstream>
 
 class Shader
 {
 public:
     static std::vector<std::string> kSkipShaderIncludes;
     static std::string loadAndProcessShader(std::string path);
+
+    std::string sourcePath;
+    std::stringstream sourceText;
 
     virtual bool Load(const char* path, bool preprocess = false);
     virtual void Preprocess();

@@ -11,6 +11,7 @@
 
 #ifdef PLATFORM_WINDOWS
 #include "Renderer/D3D12/D3D12Renderer.h"
+#include "Renderer/D3D12/D3D12Shader.h"
 #else
 #include "Renderer/Metal/MetalRenderer.h"
 #endif
@@ -61,13 +62,21 @@ int main (int argc, char *args[])
     Platform* platform = new Platform();
     platform->Init();
     
-    Renderer* renderer = nullptr;
+    D3D12Shader* test = new D3D12Shader();
+    if (test->Load("shaders/d3d12/Raytracing.hlsl", false))
+    {
+        test->Compile();
+    }
+
+    D3D12Renderer* renderer = nullptr;
 #ifdef PLATFORM_WINDOWS
     renderer = new D3D12Renderer();
 #else
     renderer = new MetalRenderer();
 #endif
     renderer->Init(platform);
+
+    renderer->testShader = test;
     
     Scene* scene = createCornellBoxScene();
     renderer->LoadScene(scene);

@@ -24,13 +24,10 @@ protected:
 
     CComPtr<IDxcBlobEncoding> sourceBlob;
     CComPtr<IDxcBlob> compiledBlob;
-    std::string filePath;
 
 public:
     D3D12Shader();
 
-    virtual bool Load(const char* path, bool preprocess = false);
-    virtual void Preprocess();
     virtual bool Compile();
 
     virtual void* GetBufferPointer();

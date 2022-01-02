@@ -1,6 +1,7 @@
 local pkgconfig = require 'pkgconfig'
 
 local LIB_DIR = "lib/"
+local RUNTIME_DIR = "runtime/"
 local SRC_DIR = "src/"
 
 solution "ToyRaygun"
@@ -81,7 +82,8 @@ project "ToyRaygun"
 
         files {
             path.join(SRC_DIR, "Renderer/D3D12/**.cpp"),
-            path.join(SRC_DIR, "Renderer/D3D12/**.h")
+            path.join(SRC_DIR, "Renderer/D3D12/**.h"),
+            path.join(RUNTIME_DIR, "shaders/**.hlsl")
         }
 
         links { 
@@ -98,13 +100,14 @@ project "ToyRaygun"
         postbuildcommands {
             "{COPYFILE} \"" .. path.getabsolute(path.join(LIB_DIR, "SDL2-2.0.18/lib/x64/SDL2.dll")) .. "\" \"%{cfg.buildtarget.directory}/SDL2.dll\"",
             "{COPYFILE} \"" .. path.getabsolute(path.join(LIB_DIR, "DirectXShaderCompiler/bin/x64/dxcompiler.dll")) .. "\" \"%{cfg.buildtarget.directory}/dxcompiler.dll\"",
+            "{COPYFILE} \"" .. path.getabsolute(path.join(LIB_DIR, "DirectXShaderCompiler/bin/x64/dxil.dll")) .. "\" \"%{cfg.buildtarget.directory}/dxil.dll\"",
         }
 
     filter "system:macosx"
         files {
             path.join(SRC_DIR, "Renderer/Metal/**.mm"),
             path.join(SRC_DIR, "Renderer/Metal/**.h"),
-            path.join(SRC_DIR, "shaders/**.metal")
+            path.join(RUNTIME_DIR, "shaders/**.metal")
         }
 
         libdirs { 

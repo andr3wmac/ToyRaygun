@@ -12,6 +12,7 @@
 #pragma once
 
 #include "../Renderer.h"
+#include "Renderer/D3D12/D3D12Shader.h"
 
 #include <windows.h>
 #include <windowsx.h>
@@ -49,6 +50,8 @@ class D3D12Renderer : public Renderer
 {
 public:
     D3D12Renderer();
+
+    D3D12Shader* testShader;
 
     // Messages
     virtual void Init(Platform* platform);

@@ -12,8 +12,25 @@
 #ifndef RAYTRACING_HLSL
 #define RAYTRACING_HLSL
 
-#define HLSL
-#include "RaytracingHlslCompat.h"
+struct SceneConstantBuffer
+{
+    row_major float4x4 projectionToWorld;
+    float4 cameraPosition;
+    float4 lightPosition;
+    float4 lightAmbientColor;
+    float4 lightDiffuseColor;
+};
+
+struct CubeConstantBuffer
+{
+    float4 albedo;
+};
+
+struct Vertex
+{
+    float3 position;
+    float3 normal;
+};
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
 RWTexture2D<float4> RenderTarget : register(u0);

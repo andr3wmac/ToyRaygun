@@ -275,8 +275,10 @@ void D3D12Renderer::CreateRaytracingPipelineStateObject()
     // This contains the shaders and their entrypoints for the state object.
     // Since shaders are not considered a subobject, they need to be passed in via DXIL library subobjects.
 
+
     auto lib = raytracingPipeline.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
-    D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE((void *)g_pRaytracing, ARRAYSIZE(g_pRaytracing));
+    D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE(testShader->GetBufferPointer(), testShader->GetBufferSize());
+    //D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE((void*)g_pRaytracing, ARRAYSIZE(g_pRaytracing));
     lib->SetDXILLibrary(&libdxil);
     // Define which shader exports to surface from the library.
     // If no shader exports are defined for a DXIL library subobject, all shaders will be surfaced.
@@ -319,9 +321,9 @@ void D3D12Renderer::CreateRaytracingPipelineStateObject()
     UINT maxRecursionDepth = 1; // ~ primary rays only. 
     pipelineConfig->Config(maxRecursionDepth);
 
-#if _DEBUG
+//#if _DEBUG
     PrintStateObjectDesc(raytracingPipeline);
-#endif
+//#endif
 
     // Create the state object.
     ThrowIfFailed(m_dxrDevice->CreateStateObject(raytracingPipeline, IID_PPV_ARGS(&m_dxrStateObject)), "Couldn't create DirectX Raytracing state object.\n");

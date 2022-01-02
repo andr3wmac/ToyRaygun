@@ -1,4 +1,5 @@
 #include "D3D12Shader.h"
+#include <iostream>
 
 CComPtr<IDxcLibrary> D3D12Shader::library = nullptr;
 CComPtr<IDxcCompiler> D3D12Shader::compiler = nullptr;
@@ -18,32 +19,30 @@ D3D12Shader::D3D12Shader()
     }
 }
 
-bool D3D12Shader::Load(const char* path, bool preprocess)
-{
-    filePath = path;
-    std::wstring sourcePath = std::wstring(filePath.begin(), filePath.end());
-
-    uint32_t codePage = CP_UTF8;
-    CComPtr<IDxcBlobEncoding> sourceBlob;
-    HRESULT hr = library->CreateBlobFromFile(sourcePath.c_str(), &codePage, &sourceBlob);
-
-    return false;
-}
-
-void D3D12Shader::Preprocess()
-{
-
-}
-
 bool D3D12Shader::Compile()
 {
-    std::wstring sourceName = std::wstring(filePath.begin(), filePath.end());
+    std::string sourceString = sourceText.str();
+    HRESULT hr = library->CreateBlobWithEncodingOnHeapCopy(sourceString.c_str(), sourceString.length(),
+        CP_UTF8, &sourceBlob);
+
+    if (FAILED(hr))
+    {
+        return false;
+    }
+
+    if (sourceBlob == nullptr)
+    {
+        OutputDebugString("Shader compilation failed.");
+        return false;
+    }
+
+    std::wstring sourceNameWCHAR = std::wstring(sourcePath.begin(), sourcePath.end());
 
     CComPtr<IDxcOperationResult> result;
-    HRESULT hr = compiler->Compile(
+    hr = compiler->Compile(
         sourceBlob, // pSource
-        sourceName.c_str(), // pSourceName
-        L"main", // pEntryPoint
+        sourceNameWCHAR.c_str(), // pSourceName
+        L"", // pEntryPoint
         L"lib_6_3", // pTargetProfile
         NULL, 0, // pArguments, argCount
         NULL, 0, // pDefines, defineCount
@@ -63,11 +62,12 @@ bool D3D12Shader::Compile()
             hr = result->GetErrorBuffer(&errorsBlob);
             if (SUCCEEDED(hr) && errorsBlob)
             {
-                wprintf(L"Compilation failed with errors:\n%hs\n",
-                    (const char*)errorsBlob->GetBufferPointer());
+                OutputDebugString("Shader compilation failed.");
+                OutputDebugString((const char*)errorsBlob->GetBufferPointer());
             }
         }
 
+        OutputDebugString("Shader compilation failed.");
         return false;
     }
 
@@ -79,6 +79,7 @@ void* D3D12Shader::GetBufferPointer()
 {
     if (compiledBlob == nullptr)
     {
+        OutputDebugString("D3D12 SHADER IS NULL.");
         return nullptr;
     }
 
@@ -89,7 +90,8 @@ size_t D3D12Shader::GetBufferSize()
 {
     if (compiledBlob == nullptr)
     {
-        return -1;
+        OutputDebugString("D3D12 SHADER IS NULL.");
+        return 0;
     }
 
     return compiledBlob->GetBufferSize();
