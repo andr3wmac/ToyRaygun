@@ -27,19 +27,19 @@ class Renderer;
 class Platform
 {
 protected:
+    bool m_quit;
     SDL_Window* m_window;
     SDL_Renderer* m_renderer;
     
 public:
-    bool m_quit;
+    static Shader* createShader();
+    static Renderer* createRenderer();
 
-    static Shader* CreateShader();
-    static Renderer* CreateRenderer();
-
-    virtual void Init();
-    virtual void Destroy();
+    virtual void init();
+    virtual void destroy();
     
-    virtual void PollEvents();
+    virtual bool hasQuit();
+    virtual void pollEvents();
     
     SDL_Renderer* getRenderer() { return m_renderer; }
 };

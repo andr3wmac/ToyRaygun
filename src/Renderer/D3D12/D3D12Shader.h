@@ -19,17 +19,17 @@ using Microsoft::WRL::ComPtr;
 class D3D12Shader : public Shader
 {
 protected:
-    static CComPtr<IDxcLibrary> library;
-    static CComPtr<IDxcCompiler> compiler;
+    static CComPtr<IDxcLibrary> m_library;
+    static CComPtr<IDxcCompiler> m_compiler;
 
-    CComPtr<IDxcBlobEncoding> sourceBlob;
-    CComPtr<IDxcBlob> compiledBlob;
+    CComPtr<IDxcBlobEncoding> m_sourceBlob;
+    CComPtr<IDxcBlob> m_compiledBlob;
 
 public:
     D3D12Shader();
 
-    virtual bool Compile();
+    virtual bool compile();
 
-    virtual void* GetBufferPointer();
-    virtual size_t GetBufferSize();
+    virtual void* getBufferPointer();
+    virtual size_t getBufferSize();
 };

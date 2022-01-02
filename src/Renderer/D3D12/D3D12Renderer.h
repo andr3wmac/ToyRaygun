@@ -53,15 +53,12 @@ public:
     D3D12Renderer();
 
     // Setup
-    virtual void Init(Platform* platform);
-    virtual void Destroy();
-    virtual void LoadScene(Scene* scene);
+    virtual void init(Platform* platform);
+    virtual void destroy();
+    virtual void loadScene(Scene* scene);
 
     // Rendering
-    virtual void RenderFrame();
-
-    // Events
-    virtual void OnSizeChanged(UINT width, UINT height, bool minimized);
+    virtual void renderFrame();
 
 private:
     static const UINT FrameCount = 3;

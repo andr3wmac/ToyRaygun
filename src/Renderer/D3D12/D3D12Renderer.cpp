@@ -30,7 +30,7 @@ D3D12Renderer::D3D12Renderer() :
     ReleaseDeviceDependentResources();
 }
 
-void D3D12Renderer::Init(Platform* platform)
+void D3D12Renderer::init(Platform* platform)
 {
     m_deviceResources = std::make_unique<DeviceResources>(
         DXGI_FORMAT_R8G8B8A8_UNORM,
@@ -71,7 +71,7 @@ void D3D12Renderer::UpdateCameraMatrices()
 }
 
 // Initialize scene rendering parameters.
-void D3D12Renderer::LoadScene(Scene* scene)
+void D3D12Renderer::loadScene(Scene* scene)
 {
     auto frameIndex = m_deviceResources->GetCurrentFrameIndex();
 
@@ -273,14 +273,13 @@ void D3D12Renderer::CreateRaytracingPipelineStateObject()
 
 
     auto lib = raytracingPipeline.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
-    D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE(m_rtShader->GetBufferPointer(), m_rtShader->GetBufferSize());
-    //D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE((void*)g_pRaytracing, ARRAYSIZE(g_pRaytracing));
+    D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE(m_rtShader->getBufferPointer(), m_rtShader->getBufferSize());
     lib->SetDXILLibrary(&libdxil);
     // Define which shader exports to surface from the library.
     // If no shader exports are defined for a DXIL library subobject, all shaders will be surfaced.
     // In this sample, this could be ommited for convenience since the sample uses all shaders in the library. 
     {
-        std::vector<std::string> functionNames = m_rtShader->GetFunctionNames();
+        std::vector<std::string> functionNames = m_rtShader->getFunctionNames();
         for (int i = 0; i < functionNames.size(); ++i)
         {
             std::wstring funcNameW = std::wstring(functionNames[i].begin(), functionNames[i].end());
@@ -292,7 +291,7 @@ void D3D12Renderer::CreateRaytracingPipelineStateObject()
     // A hit group specifies closest hit, any hit and intersection shaders to be executed when a ray intersects the geometry's triangle/AABB.
     // In this sample, we only use triangle geometry with a closest hit shader, so others are not set.
     auto hitGroup = raytracingPipeline.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
-    hitGroup->SetClosestHitShaderImport(m_rtShader->GetFunctionW(ShaderFunctionType::ClosestHit).c_str());
+    hitGroup->SetClosestHitShaderImport(m_rtShader->getFunctionW(ShaderFunctionType::ClosestHit).c_str());
     hitGroup->SetHitGroupExport(c_hitGroupName);
     hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
     
@@ -519,8 +518,8 @@ void D3D12Renderer::BuildShaderTables()
 
     auto GetShaderIdentifiers = [&](auto* stateObjectProperties)
     {
-        rayGenShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->GetFunctionW(ShaderFunctionType::RayGen).c_str());
-        missShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->GetFunctionW(ShaderFunctionType::Miss).c_str());
+        rayGenShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->getFunctionW(ShaderFunctionType::RayGen).c_str());
+        missShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->getFunctionW(ShaderFunctionType::Miss).c_str());
         hitGroupShaderIdentifier = stateObjectProperties->GetShaderIdentifier(c_hitGroupName);
     };
 
@@ -690,7 +689,7 @@ void D3D12Renderer::RecreateD3D()
 }
 
 // Render the scene.
-void D3D12Renderer::RenderFrame()
+void D3D12Renderer::renderFrame()
 {
     if (!m_deviceResources->IsWindowVisible())
     {
@@ -704,7 +703,7 @@ void D3D12Renderer::RenderFrame()
     m_deviceResources->Present(D3D12_RESOURCE_STATE_PRESENT);
 }
 
-void D3D12Renderer::Destroy()
+void D3D12Renderer::destroy()
 {
     // Let GPU finish before releasing D3D resources.
     m_deviceResources->WaitForGpu();
@@ -714,7 +713,7 @@ void D3D12Renderer::Destroy()
 }
 
 // Handle OnSizeChanged message event.
-void D3D12Renderer::OnSizeChanged(UINT width, UINT height, bool minimized)
+/*void D3D12Renderer::OnSizeChanged(UINT width, UINT height, bool minimized)
 {
     if (!m_deviceResources->WindowSizeChanged(width, height, minimized))
     {
@@ -725,7 +724,7 @@ void D3D12Renderer::OnSizeChanged(UINT width, UINT height, bool minimized)
 
     ReleaseWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
-}
+}*/
 
 // Allocate a descriptor and return its index. 
 // If the passed descriptorIndexToUse is valid, it will be used instead of allocating a new one.

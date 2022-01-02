@@ -1,26 +1,26 @@
 #include "Renderer.h"
 
-void Renderer::Init(Platform* platform)
+void Renderer::init(Platform* platform)
 {
 
 }
 
-void Renderer::Destroy()
+void Renderer::destroy()
 {
 
 }
 
-void Renderer::LoadScene(Scene* scene)
+void Renderer::loadScene(Scene* scene)
 {
 
 }
 
-void Renderer::SetRaytracingShader(Shader* shader)
+void Renderer::setRaytracingShader(Shader* shader)
 {
 	m_rtShader = shader;
 }
 
-void Renderer::RenderFrame()
+void Renderer::renderFrame()
 {
 
 }

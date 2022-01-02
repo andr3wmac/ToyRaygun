@@ -31,17 +31,17 @@ public:
     std::string m_sourcePath;
     std::stringstream m_sourceText;
 
-    virtual bool Load(std::string path, bool preprocess = false);
-    virtual void Preprocess();
-    virtual bool Compile();
+    virtual bool load(std::string path, bool doPreprocess = false);
+    virtual void preprocess();
+    virtual bool compile();
 
-    virtual void AddFunction(std::string functionName, ShaderFunctionType functionType = ShaderFunctionType::None);
-    virtual std::vector<std::string> GetFunctionNames();
-    virtual std::string GetFunction(ShaderFunctionType functionType);
-    virtual std::wstring GetFunctionW(ShaderFunctionType functionType);
+    virtual void addFunction(std::string functionName, ShaderFunctionType functionType = ShaderFunctionType::None);
+    virtual std::vector<std::string> getFunctionNames();
+    virtual std::string getFunction(ShaderFunctionType functionType);
+    virtual std::wstring getFunctionW(ShaderFunctionType functionType);
 
-    virtual void* GetBufferPointer();
-    virtual size_t GetBufferSize();
+    virtual void* getBufferPointer();
+    virtual size_t getBufferSize();
 };
 
 #endif

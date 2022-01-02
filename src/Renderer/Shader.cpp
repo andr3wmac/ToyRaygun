@@ -61,7 +61,7 @@ std::string Shader::loadAndProcessShader(std::string filename)
     return finalShader.str();
 }
 
-bool Shader::Load(std::string path, bool preprocess)
+bool Shader::load(std::string path, bool doPreprocess)
 {
     m_sourcePath = path;
     m_sourceText.clear();
@@ -77,15 +77,15 @@ bool Shader::Load(std::string path, bool preprocess)
         return false;
     }
 
-    if (preprocess)
+    if (doPreprocess)
     {
-        Preprocess();
+        preprocess();
     }
 
     return true;
 }
 
-void Shader::Preprocess()
+void Shader::preprocess()
 {
     std::smatch match;
     std::regex expr("\\#include\\s*(<([^\"<>|\\b]+)>|\"([^\"<>|\\b]+)\")");
@@ -133,7 +133,7 @@ void Shader::Preprocess()
     m_sourceText << finalShader.rdbuf();
 }
 
-void Shader::AddFunction(std::string functionName, ShaderFunctionType functionType)
+void Shader::addFunction(std::string functionName, ShaderFunctionType functionType)
 {
     ShaderFunction shaderFunc;
     shaderFunc.functionName = functionName;
@@ -141,7 +141,7 @@ void Shader::AddFunction(std::string functionName, ShaderFunctionType functionTy
     m_functions.push_back(shaderFunc);
 }
 
-std::vector<std::string> Shader::GetFunctionNames()
+std::vector<std::string> Shader::getFunctionNames()
 {
     std::vector<std::string> functionNames;
 
@@ -153,7 +153,7 @@ std::vector<std::string> Shader::GetFunctionNames()
     return functionNames;
 }
 
-std::string Shader::GetFunction(ShaderFunctionType functionType)
+std::string Shader::getFunction(ShaderFunctionType functionType)
 {
     for (int i = 0; i < m_functions.size(); ++i)
     {
@@ -166,7 +166,7 @@ std::string Shader::GetFunction(ShaderFunctionType functionType)
     return "";
 }
 
-std::wstring Shader::GetFunctionW(ShaderFunctionType functionType)
+std::wstring Shader::getFunctionW(ShaderFunctionType functionType)
 {
     for (int i = 0; i < m_functions.size(); ++i)
     {
@@ -180,17 +180,17 @@ std::wstring Shader::GetFunctionW(ShaderFunctionType functionType)
     return L"";
 }
 
-bool Shader::Compile()
+bool Shader::compile()
 {
     return false;
 }
 
-void* Shader::GetBufferPointer()
+void* Shader::getBufferPointer()
 {
     return nullptr;
 }
 
-size_t Shader::GetBufferSize()
+size_t Shader::getBufferSize()
 {
     return -1;
 }

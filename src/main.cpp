@@ -53,16 +53,16 @@ Scene* createCornellBoxScene()
 int main (int argc, char *args[])
 {
     Platform* platform = new Platform();
-    platform->Init();
+    platform->init();
     
-    Shader* rtShader = Platform::CreateShader();
-    if (rtShader->Load("shaders/d3d12/Raytracing.shader", false))
+    Shader* rtShader = Platform::createShader();
+    if (rtShader->load("shaders/d3d12/Raytracing.shader", false))
     {
-        rtShader->AddFunction("MyRaygenShader", ShaderFunctionType::RayGen);
-        rtShader->AddFunction("MyClosestHitShader", ShaderFunctionType::ClosestHit);
-        rtShader->AddFunction("MyMissShader", ShaderFunctionType::Miss);
+        rtShader->addFunction("MyRaygenShader", ShaderFunctionType::RayGen);
+        rtShader->addFunction("MyClosestHitShader", ShaderFunctionType::ClosestHit);
+        rtShader->addFunction("MyMissShader", ShaderFunctionType::Miss);
 
-        if (!rtShader->Compile())
+        if (!rtShader->compile())
         {
             return -1;
         }
@@ -71,17 +71,17 @@ int main (int argc, char *args[])
         // Print error.
     }
 
-    Renderer* renderer = Platform::CreateRenderer();
-    renderer->Init(platform);
-    renderer->SetRaytracingShader(rtShader);
+    Renderer* renderer = Platform::createRenderer();
+    renderer->init(platform);
+    renderer->setRaytracingShader(rtShader);
     
     Scene* scene = createCornellBoxScene();
-    renderer->LoadScene(scene);
+    renderer->loadScene(scene);
     
-    while (!platform->m_quit)
+    while (!platform->hasQuit())
     {
-        platform->PollEvents();
-        renderer->RenderFrame();
+        platform->pollEvents();
+        renderer->renderFrame();
     }
     
     return 0;

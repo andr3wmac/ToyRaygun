@@ -15,7 +15,7 @@
 #include "Renderer/Metal/MetalRenderer.h"
 #endif
 
-Shader* Platform::CreateShader()
+Shader* Platform::createShader()
 {
 #ifdef PLATFORM_WINDOWS
     D3D12Shader* newShader = new D3D12Shader();
@@ -26,7 +26,7 @@ Shader* Platform::CreateShader()
 #endif
 }
 
-Renderer* Platform::CreateRenderer()
+Renderer* Platform::createRenderer()
 {
 #ifdef PLATFORM_WINDOWS
     D3D12Renderer* newRenderer = new D3D12Renderer();
@@ -37,7 +37,7 @@ Renderer* Platform::CreateRenderer()
 #endif
 }
 
-void Platform::Init()
+void Platform::init()
 {
     m_quit = false;
     
@@ -50,14 +50,19 @@ void Platform::Init()
     m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_PRESENTVSYNC);
 }
 
-void Platform::Destroy()
+void Platform::destroy()
 {
     SDL_DestroyRenderer(m_renderer);
     SDL_DestroyWindow(m_window);
     SDL_Quit();
 }
 
-void Platform::PollEvents()
+bool Platform::hasQuit()
+{
+    return m_quit;
+}
+
+void Platform::pollEvents()
 {
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0)

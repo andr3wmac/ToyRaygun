@@ -39,11 +39,11 @@ protected:
     Shader* m_rtShader;
 
 public:
-    virtual void Init(Platform* platform);
-    virtual void Destroy();
-    virtual void LoadScene(Scene* scene);
-    virtual void SetRaytracingShader(Shader* shader);
-    virtual void RenderFrame();
+    virtual void init(Platform* platform);
+    virtual void destroy();
+    virtual void loadScene(Scene* scene);
+    virtual void setRaytracingShader(Shader* shader);
+    virtual void renderFrame();
 };
 
 #endif
