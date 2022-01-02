@@ -2,7 +2,7 @@
 
 # What is it?
 
-A personal project to learn the differences between DX12, Metal, and Vulkan raytracing APIs by abstracting them into a simple toy raytracer.
+A personal project to learn the differences between DirectX 12, Metal, and Vulkan raytracing APIs by abstracting them into a simple toy raytracer.
 
 # Features
 
@@ -24,3 +24,11 @@ A personal project to learn the differences between DX12, Metal, and Vulkan rayt
 
 - [bx](https://github.com/bkaradzic/bx) as base library for math, etc.
 - [SDL2](https://www.libsdl.org/) for windowing and input.
+
+# Screenshots
+
+## D3D12
+![Toy Raygun D3D12](img/screenshot_d3d12.png?raw=true "Toy Raygun D3D12")
+
+## Metal
+![Toy Raygun Metal](img/screenshot_metal.png?raw=true "Toy Raygun Metal")
