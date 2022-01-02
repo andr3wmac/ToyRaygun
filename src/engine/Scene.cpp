@@ -115,7 +115,8 @@ void Scene::addGeometry(bx::Vec3* vertices,
         {
             bx::Vec3 xfrmVert = applyTransform(vertices[idx[j]], transformMtx, 1.0f);
             bx::Vec3 xfrmNormal = applyTransform(normal, transformMtx, 0.0f);
-            
+            xfrmNormal = bx::normalize(xfrmNormal);
+
             m_vertexBuffer.push_back(xfrmVert);
             m_indexBuffer.push_back(m_vertexBuffer.size() - 1);
             m_normalBuffer.push_back(xfrmNormal);

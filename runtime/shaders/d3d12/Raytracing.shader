@@ -30,6 +30,7 @@ struct Vertex
 {
     float3 position;
     float3 normal;
+    float3 color;
 };
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
@@ -165,16 +166,20 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
         Vertices[indices[1]].normal, 
         Vertices[indices[2]].normal 
     };
-
-    // Compute the triangle's normal.
-    // This is redundant and done for illustration purposes 
-    // as all the per-vertex normals are the same and match triangle's normal in this sample. 
     float3 triangleNormal = HitAttribute(vertexNormals, attr);
 
-    float4 diffuseColor = CalculateDiffuseLighting(hitPosition, triangleNormal);
-    float4 color = g_sceneCB.lightAmbientColor + diffuseColor;
+    // Retrieve corresponding vertex colors for the triangle vertices.
+    float3 vertexColors[3] = {
+        Vertices[indices[0]].color,
+        Vertices[indices[1]].color,
+        Vertices[indices[2]].color
+    };
+    float3 triangleColor = HitAttribute(vertexColors, attr);
 
-    payload.color = color;
+    float4 diffuseColor = CalculateDiffuseLighting(hitPosition, triangleNormal);
+    float3 color = triangleColor * diffuseColor.rgb;
+
+    payload.color = float4(color, 1.0);
 }
 
 [shader("miss")]

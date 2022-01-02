@@ -60,8 +60,8 @@ void D3D12Renderer::UpdateCameraMatrices()
 
     m_sceneCB[frameIndex].cameraPosition = m_eye;
     float fovAngleY = 45.0f;
-    XMMATRIX view = XMMatrixLookAtLH(m_eye, m_at, m_up);
-    XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(fovAngleY), m_aspectRatio, 1.0f, 125.0f);
+    XMMATRIX view = XMMatrixLookAtRH(m_eye, m_at, m_up);
+    XMMATRIX proj = XMMatrixPerspectiveFovRH(XMConvertToRadians(fovAngleY), m_aspectRatio, 1.0f, 125.0f);
     XMMATRIX viewProj = view * proj;
 
     m_sceneCB[frameIndex].projectionToWorld = XMMatrixInverse(nullptr, viewProj);
@@ -79,20 +79,10 @@ void D3D12Renderer::loadScene(toyraygun::Scene* scene)
 
     // Setup camera.
     {
-        // Initialize the view and projection inverse matrices.
         m_eye = { 0.0f, 1.0f, 3.38, 1.0f };
         m_at = { 0.0f, 1.0f, -1.0f, 1.0f };
-        XMVECTOR right = { 1.0f, 0.0f, 0.0f, 0.0f };
-
-        XMVECTOR direction = XMVector4Normalize(m_at - m_eye);
-        //m_up = XMVector3Normalize(XMVector3Cross(direction, right));
         m_up = { 0.0f, 1.0f, 0.0f, 1.0f };
 
-        // Rotate camera around Y axis.
-        //XMMATRIX rotate = XMMatrixRotationY(XMConvertToRadians(45.0f));
-        //m_eye = XMVector3Transform(m_eye, rotate);
-        //m_up = XMVector3Transform(m_up, rotate);
-        
         UpdateCameraMatrices();
     }
 
@@ -103,13 +93,13 @@ void D3D12Renderer::loadScene(toyraygun::Scene* scene)
         XMFLOAT4 lightAmbientColor;
         XMFLOAT4 lightDiffuseColor;
 
-        lightPosition = XMFLOAT4(0.0f, 1.8f, -3.0f, 0.0f);
+        lightPosition = XMFLOAT4(0.0f, 1.98f, 0.0f, 0.0f);
         m_sceneCB[frameIndex].lightPosition = XMLoadFloat4(&lightPosition);
 
         lightAmbientColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
         m_sceneCB[frameIndex].lightAmbientColor = XMLoadFloat4(&lightAmbientColor);
 
-        lightDiffuseColor = XMFLOAT4(0.5f, 0.0f, 0.0f, 1.0f);
+        lightDiffuseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
         m_sceneCB[frameIndex].lightDiffuseColor = XMLoadFloat4(&lightDiffuseColor);
     }
 
@@ -395,7 +385,8 @@ void D3D12Renderer::BuildGeometry(toyraygun::Scene* scene)
     {
         vertices.push_back({ 
             XMFLOAT3(scene->m_vertexBuffer[i].x, scene->m_vertexBuffer[i].y, scene->m_vertexBuffer[i].z),
-            XMFLOAT3(scene->m_normalBuffer[i].x, scene->m_normalBuffer[i].y, scene->m_normalBuffer[i].z)
+            XMFLOAT3(scene->m_normalBuffer[i].x, scene->m_normalBuffer[i].y, scene->m_normalBuffer[i].z),
+            XMFLOAT3(scene->m_colorBuffer[i].x, scene->m_colorBuffer[i].y, scene->m_colorBuffer[i].z),
         });
     }
 
@@ -404,7 +395,7 @@ void D3D12Renderer::BuildGeometry(toyraygun::Scene* scene)
 
     // Vertex buffer is passed to the shader along with index buffer as a descriptor table.
     // Vertex buffer descriptor must follow index buffer descriptor in the descriptor heap.
-    UINT descriptorIndexIB = CreateBufferSRV(&m_indexBuffer, indices.size() / 4, 0);
+    UINT descriptorIndexIB = CreateBufferSRV(&m_indexBuffer, indices.size() / sizeof(Index), 0);
     UINT descriptorIndexVB = CreateBufferSRV(&m_vertexBuffer, vertices.size(), sizeof(Vertex));
     ThrowIfFalse(descriptorIndexVB == descriptorIndexIB + 1, "Vertex Buffer descriptor index must follow that of Index Buffer descriptor index!");
 }
