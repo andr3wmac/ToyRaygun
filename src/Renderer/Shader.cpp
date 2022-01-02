@@ -61,15 +61,15 @@ std::string Shader::loadAndProcessShader(std::string filename)
     return finalShader.str();
 }
 
-bool Shader::Load(const char* path, bool preprocess)
+bool Shader::Load(std::string path, bool preprocess)
 {
-    sourcePath = path;
-    sourceText.clear();
+    m_sourcePath = path;
+    m_sourceText.clear();
 
     std::ifstream shaderFile(path);
     if (shaderFile) 
     {
-        sourceText << shaderFile.rdbuf();
+        m_sourceText << shaderFile.rdbuf();
         shaderFile.close();
     }
     else 
@@ -92,7 +92,7 @@ void Shader::Preprocess()
 
     std::stringstream finalShader;
     std::string line;
-    while (std::getline(sourceText, line))
+    while (std::getline(m_sourceText, line))
     {
         if (std::regex_search(line, match, expr))
         {
@@ -129,13 +129,55 @@ void Shader::Preprocess()
 
     finalShader.seekg(0);
 
-    sourceText.clear();
-    sourceText << finalShader.rdbuf();
+    m_sourceText.clear();
+    m_sourceText << finalShader.rdbuf();
+}
 
-    std::ofstream outFile;
-    outFile.open("test_finalShader.txt");
-    outFile << sourceText.rdbuf();
-    outFile.close();
+void Shader::AddFunction(std::string functionName, ShaderFunctionType functionType)
+{
+    ShaderFunction shaderFunc;
+    shaderFunc.functionName = functionName;
+    shaderFunc.functionType = functionType;
+    m_functions.push_back(shaderFunc);
+}
+
+std::vector<std::string> Shader::GetFunctionNames()
+{
+    std::vector<std::string> functionNames;
+
+    for (int i = 0; i < m_functions.size(); ++i)
+    {
+        functionNames.push_back(m_functions[i].functionName);
+    }
+
+    return functionNames;
+}
+
+std::string Shader::GetFunction(ShaderFunctionType functionType)
+{
+    for (int i = 0; i < m_functions.size(); ++i)
+    {
+        if (m_functions[i].functionType == functionType)
+        {
+            return m_functions[i].functionName;
+        }
+    }
+
+    return "";
+}
+
+std::wstring Shader::GetFunctionW(ShaderFunctionType functionType)
+{
+    for (int i = 0; i < m_functions.size(); ++i)
+    {
+        if (m_functions[i].functionType == functionType)
+        {
+            std::wstring funcNameW = std::wstring(m_functions[i].functionName.begin(), m_functions[i].functionName.end());
+            return funcNameW;
+        }
+    }
+
+    return L"";
 }
 
 bool Shader::Compile()

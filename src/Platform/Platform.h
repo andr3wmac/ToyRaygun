@@ -21,21 +21,27 @@
 #    endif
 #endif
 
+class Shader;
+class Renderer;
+
 class Platform
 {
 protected:
-    SDL_Window* window;
-    SDL_Renderer* renderer;
+    SDL_Window* m_window;
+    SDL_Renderer* m_renderer;
     
 public:
-    bool quit;
+    bool m_quit;
+
+    static Shader* CreateShader();
+    static Renderer* CreateRenderer();
 
     virtual void Init();
     virtual void Destroy();
     
     virtual void PollEvents();
     
-    SDL_Renderer* getRenderer() { return renderer; }
+    SDL_Renderer* getRenderer() { return m_renderer; }
 };
 
 #endif /* Platform_H */

@@ -7,23 +7,53 @@
 
 #include "Platform.h"
 
+#ifdef PLATFORM_WINDOWS
+#include "Renderer/D3D12/D3D12Shader.h"
+#include "Renderer/D3D12/D3D12Renderer.h"
+#else
+#include "Renderer/Metal/MetalShader.h"
+#include "Renderer/Metal/MetalRenderer.h"
+#endif
+
+Shader* Platform::CreateShader()
+{
+#ifdef PLATFORM_WINDOWS
+    D3D12Shader* newShader = new D3D12Shader();
+    return newShader;
+#else
+    MetalShader* newShader = new MetalShader();
+    return newShader;
+#endif
+}
+
+Renderer* Platform::CreateRenderer()
+{
+#ifdef PLATFORM_WINDOWS
+    D3D12Renderer* newRenderer = new D3D12Renderer();
+    return newRenderer;
+#else
+    MetalRenderer* newRenderer = new MetalRenderer();
+    return newRenderer;
+#endif
+}
+
 void Platform::Init()
 {
-    quit = false;
+    m_quit = false;
     
 #ifdef __APPLE__
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
 #endif
     
     SDL_InitSubSystem(SDL_INIT_VIDEO);
-    window = SDL_CreateWindow("Toy Raygun", 32, 32, 1024, 768, SDL_WINDOW_ALLOW_HIGHDPI);
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
+    m_window = SDL_CreateWindow("Toy Raygun", 32, 32, 1024, 768, SDL_WINDOW_ALLOW_HIGHDPI);
+    m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_PRESENTVSYNC);
 }
 
 void Platform::Destroy()
 {
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
+    SDL_DestroyRenderer(m_renderer);
+    SDL_DestroyWindow(m_window);
     SDL_Quit();
 }
 
@@ -35,7 +65,7 @@ void Platform::PollEvents()
         switch (e.type)
         {
             case SDL_QUIT:
-                quit = true;
+                m_quit = true;
                 break;
         }
     }

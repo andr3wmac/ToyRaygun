@@ -12,18 +12,14 @@
 #ifndef RAYTRACINGHLSLCOMPAT_H
 #define RAYTRACINGHLSLCOMPAT_H
 
-#ifdef HLSL
-#include "HlslCompat.h"
-#else
 using namespace DirectX;
 
 // Shader will use byte encoding to access indices.
 typedef UINT16 Index;
-#endif
 
 struct SceneConstantBuffer
 {
-    XMMATRIX projectionToWorld;
+    XMMATRIX projectionToWorld; //row-major
     XMVECTOR cameraPosition;
     XMVECTOR lightPosition;
     XMVECTOR lightAmbientColor;

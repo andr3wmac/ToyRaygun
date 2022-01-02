@@ -41,7 +41,8 @@ project "ToyRaygun"
     debugdir "./runtime/"
 
     defines {
-        "_THREAD_SAFE"
+        "_THREAD_SAFE",
+        "NOMINMAX"
     }
 
     sysincludedirs {
@@ -83,7 +84,7 @@ project "ToyRaygun"
         files {
             path.join(SRC_DIR, "Renderer/D3D12/**.cpp"),
             path.join(SRC_DIR, "Renderer/D3D12/**.h"),
-            path.join(RUNTIME_DIR, "shaders/**.hlsl")
+            path.join(RUNTIME_DIR, "shaders/d3d12/**.shader")
         }
 
         links { 
@@ -107,7 +108,7 @@ project "ToyRaygun"
         files {
             path.join(SRC_DIR, "Renderer/Metal/**.mm"),
             path.join(SRC_DIR, "Renderer/Metal/**.h"),
-            path.join(RUNTIME_DIR, "shaders/**.metal")
+            path.join(RUNTIME_DIR, "shaders/metal/**.shader")
         }
 
         libdirs { 

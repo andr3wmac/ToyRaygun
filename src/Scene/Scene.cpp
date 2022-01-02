@@ -117,13 +117,13 @@ void Scene::addGeometry(bx::Vec3* vertices,
             bx::Vec3 xfrmVert = applyTransform(vertices[idx[j]], transformMtx, 1.0f);
             bx::Vec3 xfrmNormal = applyTransform(normal, transformMtx, 0.0f);
             
-            vertexBuffer.push_back(xfrmVert);
-            indexBuffer.push_back(vertexBuffer.size() - 1);
-            normalBuffer.push_back(xfrmNormal);
-            colorBuffer.push_back(color);
+            m_vertexBuffer.push_back(xfrmVert);
+            m_indexBuffer.push_back(m_vertexBuffer.size() - 1);
+            m_normalBuffer.push_back(xfrmNormal);
+            m_colorBuffer.push_back(color);
         }
         
         // Masks is per-triangle, not per vertex.
-        maskBuffer.push_back(mask);
+        m_maskBuffer.push_back(mask);
     }
 }

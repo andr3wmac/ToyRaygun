@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "../Renderer.h"
+#include "Renderer/Renderer.h"
 #include "Renderer/D3D12/D3D12Shader.h"
 
 #include <windows.h>
@@ -26,7 +26,8 @@
 #include <wrl.h>
 using Microsoft::WRL::ComPtr;
 
-#include "RaytracingHlslCompat.h"
+#include "D3D12Shader.h"
+#include "ShaderCommon.h"
 #include "DeviceResources.h"
 
 namespace GlobalRootSignatureParams {
@@ -51,14 +52,15 @@ class D3D12Renderer : public Renderer
 public:
     D3D12Renderer();
 
-    D3D12Shader* testShader;
-
-    // Messages
+    // Setup
     virtual void Init(Platform* platform);
     virtual void Destroy();
     virtual void LoadScene(Scene* scene);
+
+    // Rendering
     virtual void RenderFrame();
 
+    // Events
     virtual void OnSizeChanged(UINT width, UINT height, bool minimized);
 
 private:

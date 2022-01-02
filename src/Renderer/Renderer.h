@@ -3,6 +3,7 @@
 
 #include "Platform/Platform.h"
 #include "Scene/Scene.h"
+#include "Shader.h"
 #include <bx/math.h>
 
 #define TRIANGLE_MASK_GEOMETRY 1
@@ -34,10 +35,14 @@ struct Uniforms
 
 class Renderer
 {
+protected:
+    Shader* m_rtShader;
+
 public:
     virtual void Init(Platform* platform);
     virtual void Destroy();
     virtual void LoadScene(Scene* scene);
+    virtual void SetRaytracingShader(Shader* shader);
     virtual void RenderFrame();
 };
 

@@ -21,7 +21,7 @@ D3D12Shader::D3D12Shader()
 
 bool D3D12Shader::Compile()
 {
-    std::string sourceString = sourceText.str();
+    std::string sourceString = m_sourceText.str();
     HRESULT hr = library->CreateBlobWithEncodingOnHeapCopy(sourceString.c_str(), sourceString.length(),
         CP_UTF8, &sourceBlob);
 
@@ -36,7 +36,7 @@ bool D3D12Shader::Compile()
         return false;
     }
 
-    std::wstring sourceNameWCHAR = std::wstring(sourcePath.begin(), sourcePath.end());
+    std::wstring sourceNameWCHAR = std::wstring(m_sourcePath.begin(), m_sourcePath.end());
 
     CComPtr<IDxcOperationResult> result;
     hr = compiler->Compile(

@@ -11,15 +11,11 @@
 
 #include "D3D12Renderer.h"
 #include "DirectXRaytracingHelper.h"
-#include "Raytracing.hlsl.h"
 
 using namespace std;
 using namespace DX;
 
 const wchar_t* D3D12Renderer::c_hitGroupName = L"MyHitGroup";
-const wchar_t* D3D12Renderer::c_raygenShaderName = L"MyRaygenShader";
-const wchar_t* D3D12Renderer::c_closestHitShaderName = L"MyClosestHitShader";
-const wchar_t* D3D12Renderer::c_missShaderName = L"MyMissShader";
 
 D3D12Renderer::D3D12Renderer() :
     m_raytracingOutputResourceUAVDescriptorHeapIndex(UINT_MAX),
@@ -277,23 +273,26 @@ void D3D12Renderer::CreateRaytracingPipelineStateObject()
 
 
     auto lib = raytracingPipeline.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
-    D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE(testShader->GetBufferPointer(), testShader->GetBufferSize());
+    D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE(m_rtShader->GetBufferPointer(), m_rtShader->GetBufferSize());
     //D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE((void*)g_pRaytracing, ARRAYSIZE(g_pRaytracing));
     lib->SetDXILLibrary(&libdxil);
     // Define which shader exports to surface from the library.
     // If no shader exports are defined for a DXIL library subobject, all shaders will be surfaced.
     // In this sample, this could be ommited for convenience since the sample uses all shaders in the library. 
     {
-        lib->DefineExport(c_raygenShaderName);
-        lib->DefineExport(c_closestHitShaderName);
-        lib->DefineExport(c_missShaderName);
+        std::vector<std::string> functionNames = m_rtShader->GetFunctionNames();
+        for (int i = 0; i < functionNames.size(); ++i)
+        {
+            std::wstring funcNameW = std::wstring(functionNames[i].begin(), functionNames[i].end());
+            lib->DefineExport(funcNameW.c_str());
+        }
     }
     
     // Triangle hit group
     // A hit group specifies closest hit, any hit and intersection shaders to be executed when a ray intersects the geometry's triangle/AABB.
     // In this sample, we only use triangle geometry with a closest hit shader, so others are not set.
     auto hitGroup = raytracingPipeline.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
-    hitGroup->SetClosestHitShaderImport(c_closestHitShaderName);
+    hitGroup->SetClosestHitShaderImport(m_rtShader->GetFunctionW(ShaderFunctionType::ClosestHit).c_str());
     hitGroup->SetHitGroupExport(c_hitGroupName);
     hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
     
@@ -375,17 +374,17 @@ void D3D12Renderer::BuildGeometry(Scene* scene)
     auto device = m_deviceResources->GetD3DDevice();
 
     std::vector<Index> indices;
-    for (int i = 0; i < scene->indexBuffer.size(); ++i)
+    for (int i = 0; i < scene->m_indexBuffer.size(); ++i)
     {
-        indices.push_back(scene->indexBuffer[i]);
+        indices.push_back(scene->m_indexBuffer[i]);
     }
 
     std::vector<Vertex> vertices;
-    for (int i = 0; i < scene->vertexBuffer.size(); ++i)
+    for (int i = 0; i < scene->m_vertexBuffer.size(); ++i)
     {
         vertices.push_back({ 
-            XMFLOAT3(scene->vertexBuffer[i].x, scene->vertexBuffer[i].y, scene->vertexBuffer[i].z), 
-            XMFLOAT3(scene->normalBuffer[i].x, scene->normalBuffer[i].y, scene->normalBuffer[i].z)
+            XMFLOAT3(scene->m_vertexBuffer[i].x, scene->m_vertexBuffer[i].y, scene->m_vertexBuffer[i].z),
+            XMFLOAT3(scene->m_normalBuffer[i].x, scene->m_normalBuffer[i].y, scene->m_normalBuffer[i].z)
         });
     }
 
@@ -520,8 +519,8 @@ void D3D12Renderer::BuildShaderTables()
 
     auto GetShaderIdentifiers = [&](auto* stateObjectProperties)
     {
-        rayGenShaderIdentifier = stateObjectProperties->GetShaderIdentifier(c_raygenShaderName);
-        missShaderIdentifier = stateObjectProperties->GetShaderIdentifier(c_missShaderName);
+        rayGenShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->GetFunctionW(ShaderFunctionType::RayGen).c_str());
+        missShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->GetFunctionW(ShaderFunctionType::Miss).c_str());
         hitGroupShaderIdentifier = stateObjectProperties->GetShaderIdentifier(c_hitGroupName);
     };
 

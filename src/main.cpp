@@ -9,13 +9,6 @@
 
 #include <bx/math.h>
 
-#ifdef PLATFORM_WINDOWS
-#include "Renderer/D3D12/D3D12Renderer.h"
-#include "Renderer/D3D12/D3D12Shader.h"
-#else
-#include "Renderer/Metal/MetalRenderer.h"
-#endif
-
 Scene* createCornellBoxScene()
 {
     Scene* scene = new Scene();
@@ -62,26 +55,30 @@ int main (int argc, char *args[])
     Platform* platform = new Platform();
     platform->Init();
     
-    D3D12Shader* test = new D3D12Shader();
-    if (test->Load("shaders/d3d12/Raytracing.hlsl", false))
+    Shader* rtShader = Platform::CreateShader();
+    if (rtShader->Load("shaders/d3d12/Raytracing.shader", false))
     {
-        test->Compile();
+        rtShader->AddFunction("MyRaygenShader", ShaderFunctionType::RayGen);
+        rtShader->AddFunction("MyClosestHitShader", ShaderFunctionType::ClosestHit);
+        rtShader->AddFunction("MyMissShader", ShaderFunctionType::Miss);
+
+        if (!rtShader->Compile())
+        {
+            return -1;
+        }
+    }
+    else {
+        // Print error.
     }
 
-    D3D12Renderer* renderer = nullptr;
-#ifdef PLATFORM_WINDOWS
-    renderer = new D3D12Renderer();
-#else
-    renderer = new MetalRenderer();
-#endif
+    Renderer* renderer = Platform::CreateRenderer();
     renderer->Init(platform);
-
-    renderer->testShader = test;
+    renderer->SetRaytracingShader(rtShader);
     
     Scene* scene = createCornellBoxScene();
     renderer->LoadScene(scene);
     
-    while (!platform->quit)
+    while (!platform->m_quit)
     {
         platform->PollEvents();
         renderer->RenderFrame();
