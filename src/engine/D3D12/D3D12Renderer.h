@@ -127,6 +127,7 @@ private:
 
     // Shader tables
     static const wchar_t* c_hitGroupName;
+    static const wchar_t* c_shadowHitGroupName;
     ComPtr<ID3D12Resource> m_missShaderTable;
     ComPtr<ID3D12Resource> m_hitGroupShaderTable;
     ComPtr<ID3D12Resource> m_rayGenShaderTable;

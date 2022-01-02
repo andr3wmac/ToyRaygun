@@ -80,9 +80,15 @@ uint3 Load3x16BitIndices(uint offsetBytes)
 }
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
+
 struct RayPayload
 {
     float4 color;
+};
+
+struct ShadowPayload
+{
+    bool hit;
 };
 
 // Retrieve hit world position.
@@ -198,7 +204,7 @@ float3 CalculateDiffuseLighting(float3 hitPosition, float3 lightColor, float3 al
 }
 
 [shader("raygeneration")]
-void MyRaygenShader()
+void raygen()
 {
     float3 rayDir;
     float3 origin;
@@ -207,23 +213,27 @@ void MyRaygenShader()
     GenerateCameraRay(DispatchRaysIndex().xy, origin, rayDir);
 
     // Trace the ray.
-    // Set the ray's extents.
     RayDesc ray;
     ray.Origin = origin;
     ray.Direction = rayDir;
-    // Set TMin to a non-zero small value to avoid aliasing issues due to floating - point errors.
-    // TMin should be kept small to prevent missing geometry at close contact areas.
     ray.TMin = 0.001;
     ray.TMax = 10000.0;
     RayPayload payload = { float4(0, 0, 0, 0) };
-    TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 1, 0, ray, payload);
+    TraceRay(Scene, 
+        RAY_FLAG_CULL_BACK_FACING_TRIANGLES,    // RayFlags
+        0xFF,                                   // InstanceInclusionMask
+        0,                                      // RayContributionToHitGroupIndex
+        1,                                      // MultiplierForGeometryContributionToHitGroupIndex
+        0,                                      // MissShaderIndex
+        ray, 
+        payload);
 
     // Write the raytraced color to the output texture.
     RenderTarget[DispatchRaysIndex().xy] = payload.color;
 }
 
 [shader("closesthit")]
-void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
+void primaryHit(inout RayPayload payload, in MyAttributes attr)
 {
     float3 hitPosition = HitWorldPosition();
 
@@ -265,6 +275,27 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 
         float3 color = CalculateDiffuseLighting(hitPosition, lightColor, triangleColor, triangleNormal);
         payload.color = float4(color, 1.0);
+
+        // Trace Shadow Ray
+        RayDesc ray;
+        ray.Origin = hitPosition;
+        ray.Direction = float3(g_sceneCB.light.position - hitPosition);
+        ray.TMin = 0.001;
+        ray.TMax = 10000.0;
+        ShadowPayload shadowPayload;
+        shadowPayload.hit = false;
+        TraceRay(Scene,
+            0,              // RayFlags
+            0xFF,           // InstanceInclusionMask
+            1,              // RayContributionToHitGroupIndex
+            0,              // MultiplierForGeometryContributionToHitGroupIndex
+            1,              // MissShaderIndex
+            ray,
+            shadowPayload
+        );
+
+        float factor = shadowPayload.hit ? 0.0 : 1.0;
+        payload.color = float4(color.rgb, 1.0f) * factor;
     }
 
     // Emissive
@@ -275,8 +306,30 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 }
 
 [shader("miss")]
-void MyMissShader(inout RayPayload payload)
+void primaryMiss(inout RayPayload payload)
 {
     float4 background = float4(0.0f, 0.0f, 0.0f, 1.0f);
     payload.color = background;
+}
+
+[shader("closesthit")]
+void shadowHit(inout ShadowPayload payload, in MyAttributes attribs)
+{
+    payload.hit = true;
+
+    uint triangleIndex = PrimitiveIndex();
+    uint materialID = MaterialIDs[triangleIndex];
+
+    // Emissive
+    if (materialID == MATERIAL_EMISSIVE)
+    {
+        // Hitting a light means we're not in shadow.
+        payload.hit = false;
+    }
+}
+
+[shader("miss")]
+void shadowMiss(inout ShadowPayload payload)
+{
+    payload.hit = false;
 }

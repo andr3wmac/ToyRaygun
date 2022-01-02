@@ -61,9 +61,11 @@ int main (int argc, char *args[])
     Shader* rtShader = Platform::createShader();
     if (rtShader->load("Raytracing.shader", false))
     {
-        rtShader->addFunction("MyRaygenShader", ShaderFunctionType::RayGen);
-        rtShader->addFunction("MyClosestHitShader", ShaderFunctionType::ClosestHit);
-        rtShader->addFunction("MyMissShader", ShaderFunctionType::Miss);
+        rtShader->addFunction("raygen", ShaderFunctionType::RayGen);
+        rtShader->addFunction("primaryHit", ShaderFunctionType::ClosestHit);
+        rtShader->addFunction("primaryMiss", ShaderFunctionType::Miss);
+        rtShader->addFunction("shadowHit", ShaderFunctionType::ShadowHit);
+        rtShader->addFunction("shadowMiss", ShaderFunctionType::ShadowMiss);
 
         if (!rtShader->compile())
         {

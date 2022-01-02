@@ -18,6 +18,8 @@ namespace toyraygun
         RayGen,
         ClosestHit,
         Miss,
+        ShadowHit,
+        ShadowMiss,
         Count
     };
 

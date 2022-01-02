@@ -14,6 +14,7 @@ using namespace std;
 using namespace DX;
 
 const wchar_t* D3D12Renderer::c_hitGroupName = L"MyHitGroup";
+const wchar_t* D3D12Renderer::c_shadowHitGroupName = L"ShadowHitGroup";
 
 D3D12Renderer::D3D12Renderer() :
     m_raytracingOutputResourceUAVDescriptorHeapIndex(UINT_MAX)
@@ -235,6 +236,7 @@ void D3D12Renderer::CreateLocalRootSignatureSubobjects(CD3DX12_STATE_OBJECT_DESC
         auto rootSignatureAssociation = raytracingPipeline->CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
         rootSignatureAssociation->SetSubobjectToAssociate(*localRootSignature);
         rootSignatureAssociation->AddExport(c_hitGroupName);
+        rootSignatureAssociation->AddExport(c_shadowHitGroupName);
     }
 }
 
@@ -297,6 +299,14 @@ void D3D12Renderer::createRaytracingPipelineStateObject()
     hitGroup->SetClosestHitShaderImport(m_rtShader->getFunctionW(toyraygun::ShaderFunctionType::ClosestHit).c_str());
     hitGroup->SetHitGroupExport(c_hitGroupName);
     hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+
+    // [2] : Shadow Hit Group
+    // A hit group specifies closest hit, any hit and intersection shaders to be executed when a ray intersects the geometry's triangle/AABB.
+    // In this sample, we only use triangle geometry with a closest hit shader, so others are not set.
+    auto shadowHitGroup = raytracingPipeline.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
+    shadowHitGroup->SetClosestHitShaderImport(m_rtShader->getFunctionW(toyraygun::ShaderFunctionType::ShadowHit).c_str());
+    shadowHitGroup->SetHitGroupExport(c_shadowHitGroupName);
+    shadowHitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
     
     // [2]: Raytracing Shader Config
     // Defines the maximum sizes in bytes for the ray payload and attribute structure.
@@ -321,7 +331,7 @@ void D3D12Renderer::createRaytracingPipelineStateObject()
 
     // PERFORMANCE TIP: Set max recursion depth as low as needed 
     // as drivers may apply optimization strategies for low recursion depths.
-    UINT maxRecursionDepth = 1; // ~ primary rays only. 
+    UINT maxRecursionDepth = 2; // ~ primary rays only. 
     pipelineConfig->Config(maxRecursionDepth);
 
 #if _DEBUG
@@ -528,12 +538,16 @@ void D3D12Renderer::BuildShaderTables()
     void* rayGenShaderIdentifier;
     void* missShaderIdentifier;
     void* hitGroupShaderIdentifier;
+    void* shadowHitGroupShaderIdentifier;
+    void* shadowMissShaderIdentifier;
 
     auto GetShaderIdentifiers = [&](auto* stateObjectProperties)
     {
         rayGenShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->getFunctionW(toyraygun::ShaderFunctionType::RayGen).c_str());
         missShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->getFunctionW(toyraygun::ShaderFunctionType::Miss).c_str());
         hitGroupShaderIdentifier = stateObjectProperties->GetShaderIdentifier(c_hitGroupName);
+        shadowHitGroupShaderIdentifier = stateObjectProperties->GetShaderIdentifier(c_shadowHitGroupName);
+        shadowMissShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->getFunctionW(toyraygun::ShaderFunctionType::ShadowMiss).c_str());
     };
 
     // Get shader identifiers.
@@ -556,10 +570,11 @@ void D3D12Renderer::BuildShaderTables()
 
     // Miss shader table
     {
-        UINT numShaderRecords = 1;
+        UINT numShaderRecords = 2;
         UINT shaderRecordSize = shaderIdentifierSize;
         ShaderTable missShaderTable(device, numShaderRecords, shaderRecordSize, L"MissShaderTable");
         missShaderTable.push_back(ShaderRecord(missShaderIdentifier, shaderIdentifierSize));
+        missShaderTable.push_back(ShaderRecord(shadowMissShaderIdentifier, shaderIdentifierSize));
         m_missShaderTable = missShaderTable.GetResource();
     }
 
@@ -570,10 +585,11 @@ void D3D12Renderer::BuildShaderTables()
         } rootArguments;
         rootArguments.cb = m_cubeCB;
 
-        UINT numShaderRecords = 1;
+        UINT numShaderRecords = 2;
         UINT shaderRecordSize = shaderIdentifierSize + sizeof(rootArguments);
         ShaderTable hitGroupShaderTable(device, numShaderRecords, shaderRecordSize, L"HitGroupShaderTable");
         hitGroupShaderTable.push_back(ShaderRecord(hitGroupShaderIdentifier, shaderIdentifierSize, &rootArguments, sizeof(rootArguments)));
+        hitGroupShaderTable.push_back(ShaderRecord(shadowHitGroupShaderIdentifier, shaderIdentifierSize, &rootArguments, sizeof(rootArguments)));
         m_hitGroupShaderTable = hitGroupShaderTable.GetResource();
     }
 }
@@ -588,10 +604,10 @@ void D3D12Renderer::DoRaytracing()
         // Since each shader table has only one shader record, the stride is same as the size.
         dispatchDesc->HitGroupTable.StartAddress = m_hitGroupShaderTable->GetGPUVirtualAddress();
         dispatchDesc->HitGroupTable.SizeInBytes = m_hitGroupShaderTable->GetDesc().Width;
-        dispatchDesc->HitGroupTable.StrideInBytes = dispatchDesc->HitGroupTable.SizeInBytes;
+        dispatchDesc->HitGroupTable.StrideInBytes = dispatchDesc->HitGroupTable.SizeInBytes / 2;
         dispatchDesc->MissShaderTable.StartAddress = m_missShaderTable->GetGPUVirtualAddress();
         dispatchDesc->MissShaderTable.SizeInBytes = m_missShaderTable->GetDesc().Width;
-        dispatchDesc->MissShaderTable.StrideInBytes = dispatchDesc->MissShaderTable.SizeInBytes;
+        dispatchDesc->MissShaderTable.StrideInBytes = dispatchDesc->MissShaderTable.SizeInBytes / 2;
         dispatchDesc->RayGenerationShaderRecord.StartAddress = m_rayGenShaderTable->GetGPUVirtualAddress();
         dispatchDesc->RayGenerationShaderRecord.SizeInBytes = m_rayGenShaderTable->GetDesc().Width;
         dispatchDesc->Width = m_width;
