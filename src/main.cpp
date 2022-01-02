@@ -82,7 +82,9 @@ int main (int argc, char *args[])
         return -1;
     }
     renderer->setRaytracingShader(rtShader);
-    
+    renderer->setCameraPosition(bx::Vec3(0.0f, 1.0f, 3.38f));
+    renderer->setCameraLookAt(bx::Vec3(0.0f, 1.0f, -1.0f));
+
     Scene* scene = createCornellBoxScene();
     renderer->loadScene(scene);
     

@@ -10,6 +10,8 @@
 #include "D3D12Renderer.h"
 #include "DirectXRaytracingHelper.h"
 
+#include <bx/math.h>
+
 using namespace std;
 using namespace DX;
 
@@ -23,9 +25,7 @@ D3D12Renderer::D3D12Renderer() :
 
 bool D3D12Renderer::init(toyraygun::Platform* platform)
 {
-    m_width = platform->getWidth();
-    m_height = platform->getHeight();
-    m_aspectRatio = float(m_width) / float(m_height);
+    Renderer::init(platform);
 
     ReleaseWindowSizeDependentResources();
     ReleaseDeviceDependentResources();
@@ -59,11 +59,19 @@ void D3D12Renderer::UpdateCameraMatrices()
 {
     auto frameIndex = m_deviceResources->GetCurrentFrameIndex();
 
-    m_sceneCB[frameIndex].cameraPosition = m_eye;
-    float fovAngleY = 45.0f;
-    XMMATRIX view = XMMatrixLookAtRH(m_eye, m_at, m_up);
-    XMMATRIX proj = XMMatrixPerspectiveFovRH(XMConvertToRadians(fovAngleY), m_aspectRatio, 1.0f, 125.0f);
-    XMMATRIX viewProj = view * proj;
+    XMFLOAT4 cameraPosition(m_eye.x, m_eye.y, m_eye.z, 1.0);
+    m_sceneCB[frameIndex].cameraPosition = XMLoadFloat4(&cameraPosition);
+
+    DirectX::XMFLOAT4X4A mat;
+    for (int colIndex = 0; colIndex < 4; ++colIndex)
+    {
+        for (int rowIndex = 0; rowIndex < 4; ++rowIndex)
+        {
+            mat(rowIndex, colIndex) = m_viewProjMtx[rowIndex * 4 + colIndex];
+        }
+    }
+
+    XMMATRIX viewProj = XMLoadFloat4x4A(&mat);
 
     m_sceneCB[frameIndex].projectionToWorld = XMMatrixInverse(nullptr, viewProj);
 }
@@ -79,13 +87,7 @@ void D3D12Renderer::loadScene(toyraygun::Scene* scene)
     }
 
     // Setup camera.
-    {
-        m_eye = { 0.0f, 1.0f, 3.38, 1.0f };
-        m_at = { 0.0f, 1.0f, -1.0f, 1.0f };
-        m_up = { 0.0f, 1.0f, 0.0f, 1.0f };
-
-        UpdateCameraMatrices();
-    }
+    UpdateCameraMatrices();
 
     // Setup lights.
     {

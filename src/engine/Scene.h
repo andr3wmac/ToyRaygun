@@ -28,9 +28,10 @@ namespace toyraygun
         std::vector<bx::Vec3> m_colorBuffer;
         std::vector<uint32_t> m_materialIDBuffer;
 
-        void addCube(bx::Vec3 color, float* transform);
-        void addPlane(bx::Vec3 color, float* transform);
-        void addAreaLight(bx::Vec3 color, float* transform);
+        // Geometry
+        void addCube(bx::Vec3 color, float* transformMtx);
+        void addPlane(bx::Vec3 color, float* transformMtx);
+        void addAreaLight(bx::Vec3 color, float* transformMtx);
     };
 }
 

@@ -46,13 +46,34 @@ namespace toyraygun
     protected:
         Shader* m_rtShader;
 
+        // Viewport dimensions.
+        int m_width;
+        int m_height;
+        float m_aspectRatio;
+
+        // Camera
+        bx::Vec3 m_eye;
+        bx::Vec3 m_up;
+        bx::Vec3 m_at;
+        float m_viewMtx[16];
+        float m_projMtx[16];
+        float m_viewProjMtx[16];
+
     public:
+        Renderer();
+
         virtual bool init(Platform* platform);
         virtual void destroy();
         virtual void loadScene(Scene* scene);
+        virtual void renderFrame();
+
+        // Camera
+        void setCameraPosition(bx::Vec3 position);
+        void setCameraLookAt(bx::Vec3 position);
+        void updateCamera();
+
         virtual Shader* getRaytracingShader();
         virtual void setRaytracingShader(Shader* shader);
-        virtual void renderFrame();
     };
 }
 

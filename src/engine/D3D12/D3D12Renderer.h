@@ -63,17 +63,6 @@ public:
 
 private:
     static const UINT kDefaultSwapChainBuffers = 3;
-
-    // Viewport dimensions.
-    UINT m_width;
-    UINT m_height;
-    float m_aspectRatio;
-
-    // Camera
-    XMVECTOR m_eye;
-    XMVECTOR m_at;
-    XMVECTOR m_up;
-
     std::unique_ptr<DX::DeviceResources> m_deviceResources;
 
     // We'll allocate space for several of these and they will need to be padded for alignment.
