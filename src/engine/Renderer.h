@@ -12,8 +12,8 @@
 
 #include <bx/math.h>
 
-#define MATERIAL_DEFAULT  0
-#define MATERIAL_EMISSIVE 1
+#define MATERIAL_DEFAULT  1
+#define MATERIAL_EMISSIVE 2
 
 namespace toyraygun
 {

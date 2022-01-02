@@ -228,14 +228,14 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     _indexBuffer = [_device newBufferWithLength:scene->m_indexBuffer.size() * sizeof(uint32_t) options:options];
     _vertexColorBuffer = [_device newBufferWithLength:scene->m_colorBuffer.size() * sizeof(bx::Vec3) options:options];
     _vertexNormalBuffer = [_device newBufferWithLength:scene->m_normalBuffer.size() * sizeof(bx::Vec3) options:options];
-    _triangleMaskBuffer = [_device newBufferWithLength:scene->m_maskBuffer.size() * sizeof(uint32_t) options:options];
+    _triangleMaskBuffer = [_device newBufferWithLength:scene->m_materialIDBuffer.size() * sizeof(uint32_t) options:options];
     
     // Copy vertex data into buffers
     memcpy(_vertexPositionBuffer.contents, &vertices[0], _vertexPositionBuffer.length);
     memcpy(_indexBuffer.contents, &scene->m_indexBuffer[0], _indexBuffer.length);
     memcpy(_vertexColorBuffer.contents, &scene->m_colorBuffer[0], _vertexColorBuffer.length);
     memcpy(_vertexNormalBuffer.contents, &scene->m_normalBuffer[0], _vertexNormalBuffer.length);
-    memcpy(_triangleMaskBuffer.contents, &scene->m_maskBuffer[0], _triangleMaskBuffer.length);;
+    memcpy(_triangleMaskBuffer.contents, &scene->m_materialIDBuffer[0], _triangleMaskBuffer.length);;
     
     // Cleanup.
     delete[] vertices;

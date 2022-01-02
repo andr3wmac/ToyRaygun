@@ -10,8 +10,8 @@ Metal shaders used for ray tracing
 
 using namespace metal;
 
-#define TRIANGLE_MASK_GEOMETRY 1
-#define TRIANGLE_MASK_LIGHT    2
+#define MATERIAL_DEFAULT   1
+#define MATERIAL_EMISSIVE  2
 
 #define RAY_MASK_PRIMARY   3
 #define RAY_MASK_SHADOW    1
@@ -292,7 +292,7 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
             // The light source is included in the acceleration structure so we can see it in the
             // final image. However, we will compute and sample the lighting directly, so we mask
             // the light out for shadow and secondary rays.
-            if (mask == TRIANGLE_MASK_GEOMETRY) {
+            if (mask == MATERIAL_DEFAULT) {
                 // Compute intersection point
                 float3 intersectionPoint = ray.origin + ray.direction * intersection.distance;
 
