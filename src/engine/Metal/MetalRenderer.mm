@@ -9,9 +9,9 @@ Implementation for platform independent renderer class
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
 #import "MetalRenderer.h"
-#include "Scene.h"
-#include "Renderer.h"
-#include "Shader.h"
+#include "engine/Scene.h"
+#include "engine/Renderer.h"
+#include "engine/Shader.h"
 
 #include <fstream>
 #include <string>
@@ -26,7 +26,7 @@ Implementation for platform independent renderer class
 using namespace simd;
 
 static const NSUInteger maxFramesInFlight = 3;
-static const size_t alignedUniformsSize = (sizeof(Uniforms) + 255) & ~255;
+static const size_t alignedUniformsSize = (sizeof(toyraygun::Uniforms) + 255) & ~255;
 
 static const size_t rayStride = 48;
 static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitiveIndexCoordinates);
@@ -105,14 +105,16 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     compileOptions.languageVersion = MTLLanguageVersion1_1;
     NSError* compileError;
     
-    std::string copyShaderFile = Shader::loadAndProcessShader("src/shaders/metal/Copy.metal");
-    _copyLibrary = [_device newLibraryWithSource:[NSString stringWithCString:copyShaderFile.c_str()
+    toyraygun::Shader copyShader;
+    copyShader.load("Copy.shader");
+    _copyLibrary = [_device newLibraryWithSource:[NSString stringWithCString:copyShader.getSourceText().c_str()
                                                                     encoding:[NSString defaultCStringEncoding]]
                                          options:compileOptions
                                            error:&compileError];
     
-    std::string raytraceShaderFile = Shader::loadAndProcessShader("src/shaders/metal/Shaders.metal");
-    _library = [_device newLibraryWithSource:[NSString stringWithCString:raytraceShaderFile.c_str()
+    toyraygun::Shader rtShader;
+    rtShader.load("Shaders.shader");
+    _library = [_device newLibraryWithSource:[NSString stringWithCString:rtShader.getSourceText().c_str()
                                                                 encoding:[NSString defaultCStringEncoding]]
                                      options:compileOptions
                                        error:&compileError];
@@ -187,7 +189,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         NSLog(@"Failed to create pipeline state, error %@", error);
 }
 
-- (void)loadScene:(Scene*)scene
+- (void)loadScene:(toyraygun::Scene*)scene
 {
     // Uniform buffer contains a few small values which change from frame to frame. We will have up to 3
     // frames in flight at once, so allocate a range of the buffer for each frame. The GPU will read from
@@ -209,26 +211,26 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     _uniformBuffer = [_device newBufferWithLength:uniformBufferSize options:options];
 
     // Convert 12-byte vec3s to 16-byte float3s for vertex positions.
-    float3* vertices = new float3[scene->vertexBuffer.size()];
-    for (int i = 0; i < scene->vertexBuffer.size(); ++i)
+    float3* vertices = new float3[scene->m_vertexBuffer.size()];
+    for (int i = 0; i < scene->m_vertexBuffer.size(); ++i)
     {
-        vertices[i] = { scene->vertexBuffer[i].x, scene->vertexBuffer[i].y, scene->vertexBuffer[i].z };
+        vertices[i] = { scene->m_vertexBuffer[i].x, scene->m_vertexBuffer[i].y, scene->m_vertexBuffer[i].z };
     }
     
     // Allocate buffers for vertex positions, colors, and normals. Note that each vertex position is a
     // float3, which is a 16 byte aligned type.
-    _vertexPositionBuffer = [_device newBufferWithLength:scene->vertexBuffer.size() * sizeof(float3) options:options];
-    _indexBuffer = [_device newBufferWithLength:scene->indexBuffer.size() * sizeof(uint32_t) options:options];
-    _vertexColorBuffer = [_device newBufferWithLength:scene->colorBuffer.size() * sizeof(bx::Vec3) options:options];
-    _vertexNormalBuffer = [_device newBufferWithLength:scene->normalBuffer.size() * sizeof(bx::Vec3) options:options];
-    _triangleMaskBuffer = [_device newBufferWithLength:scene->maskBuffer.size() * sizeof(uint32_t) options:options];
+    _vertexPositionBuffer = [_device newBufferWithLength:scene->m_vertexBuffer.size() * sizeof(float3) options:options];
+    _indexBuffer = [_device newBufferWithLength:scene->m_indexBuffer.size() * sizeof(uint32_t) options:options];
+    _vertexColorBuffer = [_device newBufferWithLength:scene->m_colorBuffer.size() * sizeof(bx::Vec3) options:options];
+    _vertexNormalBuffer = [_device newBufferWithLength:scene->m_normalBuffer.size() * sizeof(bx::Vec3) options:options];
+    _triangleMaskBuffer = [_device newBufferWithLength:scene->m_maskBuffer.size() * sizeof(uint32_t) options:options];
     
     // Copy vertex data into buffers
     memcpy(_vertexPositionBuffer.contents, &vertices[0], _vertexPositionBuffer.length);
-    memcpy(_indexBuffer.contents, &scene->indexBuffer[0], _indexBuffer.length);
-    memcpy(_vertexColorBuffer.contents, &scene->colorBuffer[0], _vertexColorBuffer.length);
-    memcpy(_vertexNormalBuffer.contents, &scene->normalBuffer[0], _vertexNormalBuffer.length);
-    memcpy(_triangleMaskBuffer.contents, &scene->maskBuffer[0], _triangleMaskBuffer.length);;
+    memcpy(_indexBuffer.contents, &scene->m_indexBuffer[0], _indexBuffer.length);
+    memcpy(_vertexColorBuffer.contents, &scene->m_colorBuffer[0], _vertexColorBuffer.length);
+    memcpy(_vertexNormalBuffer.contents, &scene->m_normalBuffer[0], _vertexNormalBuffer.length);
+    memcpy(_triangleMaskBuffer.contents, &scene->m_maskBuffer[0], _triangleMaskBuffer.length);;
     
     // Cleanup.
     delete[] vertices;
@@ -256,7 +258,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     _accelerationStructure.vertexBuffer = _vertexPositionBuffer;
     _accelerationStructure.indexBuffer = _indexBuffer;
     _accelerationStructure.maskBuffer = _triangleMaskBuffer;
-    _accelerationStructure.triangleCount = scene->indexBuffer.size() / 3;
+    _accelerationStructure.triangleCount = scene->m_indexBuffer.size() / 3;
     
     [_accelerationStructure rebuild];
 }
@@ -326,7 +328,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // Update this frame's uniforms
     _uniformBufferOffset = alignedUniformsSize * _uniformBufferIndex;
 
-    Uniforms *uniforms = (Uniforms *)((char *)_uniformBuffer.contents + _uniformBufferOffset);
+    toyraygun::Uniforms *uniforms = (toyraygun::Uniforms *)((char *)_uniformBuffer.contents + _uniformBufferOffset);
 
     uniforms->camera.position = bx::Vec3(0.0f, 1.0f, 3.38f);
     uniforms->camera.forward = bx::Vec3(0.0f, 0.0f, -1.0f);
@@ -542,7 +544,9 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 
 @end
 
-void MetalRenderer::Init(Platform* platform)
+using namespace toyraygun;
+
+bool MetalRenderer::init(Platform* platform)
 {
     //const char* path = "Shaders.metal";
     //const char* testData = textFileReadCF(path);
@@ -556,20 +560,22 @@ void MetalRenderer::Init(Platform* platform)
     
     _swapchain = swapchain;
     _renderer = renderer;
+    
+    return true;
 }
 
-void MetalRenderer::Destroy()
+void MetalRenderer::destroy()
 {
 
 }
 
-void MetalRenderer::LoadScene(Scene *scene)
+void MetalRenderer::loadScene(Scene *scene)
 {
     _MetalRenderer* renderer = (_MetalRenderer*)_renderer;
     [renderer loadScene:scene];
 }
 
-void MetalRenderer::RenderFrame()
+void MetalRenderer::renderFrame()
 {
     CAMetalLayer* swapchain = (CAMetalLayer*)_swapchain;
     _MetalRenderer* renderer = (_MetalRenderer*)_renderer;

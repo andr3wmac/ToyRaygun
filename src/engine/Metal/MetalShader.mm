@@ -1,0 +1,10 @@
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+ */
+
+#import "MetalShader.h"
+
+#import <MetalPerformanceShaders/MetalPerformanceShaders.h>
+#import <Metal/Metal.h>
+#import <QuartzCore/CAMetalLayer.h>

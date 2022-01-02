@@ -1,21 +1,29 @@
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+ */
+
 #ifndef _RENDERERS_METAL_
 #define _RENDERERS_METAL_
 
-#include "Renderer/Renderer.h"
+#include "engine/Renderer.h"
 
-class MetalRenderer : public Renderer
+namespace toyraygun
 {
-protected:
-    void* _swapchain;
-    void* _renderer;
-    
-public:
-    void Init(Platform* platform);
-    void Destroy();
-    
-    void LoadScene(Scene* scene);
-    
-    void RenderFrame();
-};
+    class MetalRenderer : public Renderer
+    {
+    protected:
+        void* _swapchain;
+        void* _renderer;
+        
+    public:
+        bool init(Platform* platform);
+        void destroy();
+        
+        void loadScene(Scene* scene);
+        
+        void renderFrame();
+    };
+}
 
 #endif

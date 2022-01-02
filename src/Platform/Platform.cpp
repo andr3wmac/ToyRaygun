@@ -41,7 +41,8 @@ std::string Platform::getRuntimeShaderPath()
 #ifdef PLATFORM_WINDOWS
     return "shaders/d3d12/";
 #else
-    return "shaders/metal/";
+    // Hack for now since xcode doesn't target right directory for debug.
+    return "runtime/shaders/metal/";
 #endif
 }
 

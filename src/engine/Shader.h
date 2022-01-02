@@ -46,6 +46,7 @@ namespace toyraygun
         virtual std::string getFunction(ShaderFunctionType functionType);
         virtual std::wstring getFunctionW(ShaderFunctionType functionType);
 
+        virtual std::string getSourceText();
         virtual void* getBufferPointer();
         virtual size_t getBufferSize();
     };
