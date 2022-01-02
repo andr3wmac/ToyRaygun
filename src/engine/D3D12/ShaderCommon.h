@@ -12,30 +12,41 @@
 #ifndef RAYTRACINGHLSLCOMPAT_H
 #define RAYTRACINGHLSLCOMPAT_H
 
-using namespace DirectX;
-
-// Shader will use byte encoding to access indices.
-typedef UINT16 Index;
-
-struct SceneConstantBuffer
+namespace shadercommon
 {
-    XMMATRIX projectionToWorld; //row-major
-    XMVECTOR cameraPosition;
-    XMVECTOR lightPosition;
-    XMVECTOR lightAmbientColor;
-    XMVECTOR lightDiffuseColor;
-};
+    using namespace DirectX;
 
-struct CubeConstantBuffer
-{
-    XMFLOAT4 albedo;
-};
+    // Shader will use byte encoding to access indices.
+    typedef UINT16 Index;
 
-struct Vertex
-{
-    XMFLOAT3 position;
-    XMFLOAT3 normal;
-    XMFLOAT3 color;
-};
+    struct AreaLight
+    {
+        XMVECTOR position;
+        XMVECTOR forward;
+        XMVECTOR right;
+        XMVECTOR up;
+        XMVECTOR color;
+    };
+
+    struct CubeConstantBuffer
+    {
+        XMFLOAT4 albedo;
+    };
+
+    struct Vertex
+    {
+        XMFLOAT3 position;
+        XMFLOAT3 normal;
+        XMFLOAT3 color;
+    };
+
+    struct SceneConstantBuffer
+    {
+        XMMATRIX projectionToWorld; //row-major
+        XMVECTOR cameraPosition;
+        AreaLight light;
+    };
+
+}
 
 #endif // RAYTRACINGHLSLCOMPAT_H

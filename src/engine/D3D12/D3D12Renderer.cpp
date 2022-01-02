@@ -89,18 +89,17 @@ void D3D12Renderer::loadScene(toyraygun::Scene* scene)
     // Setup lights.
     {
         // Initialize the lighting parameters.
-        XMFLOAT4 lightPosition;
-        XMFLOAT4 lightAmbientColor;
-        XMFLOAT4 lightDiffuseColor;
+        XMFLOAT4 lightPosition(0.0f, 1.98f, 0.0f, 0.0f);
+        XMFLOAT4 lightForward(0.0f, -1.0f, 0.0f, 0.0f);
+        XMFLOAT4 lightRight(0.25f, 0.0f, 0.0f, 0.0f);
+        XMFLOAT4 lightUp(0.0f, 0.0f, 0.25f, 0.0f);
+        XMFLOAT4 lightColor(4.0f, 4.0f, 4.0f, 1.0f);
 
-        lightPosition = XMFLOAT4(0.0f, 1.98f, 0.0f, 0.0f);
-        m_sceneCB[frameIndex].lightPosition = XMLoadFloat4(&lightPosition);
-
-        lightAmbientColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-        m_sceneCB[frameIndex].lightAmbientColor = XMLoadFloat4(&lightAmbientColor);
-
-        lightDiffuseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-        m_sceneCB[frameIndex].lightDiffuseColor = XMLoadFloat4(&lightDiffuseColor);
+        m_sceneCB[frameIndex].light.position = XMLoadFloat4(&lightPosition);
+        m_sceneCB[frameIndex].light.forward = XMLoadFloat4(&lightForward);
+        m_sceneCB[frameIndex].light.right = XMLoadFloat4(&lightRight);
+        m_sceneCB[frameIndex].light.up = XMLoadFloat4(&lightUp);
+        m_sceneCB[frameIndex].light.color = XMLoadFloat4(&lightColor);
     }
 
     // Apply the initial values to all frames' buffer instances.
@@ -184,15 +183,19 @@ void D3D12Renderer::CreateRootSignatures()
     // Global Root Signature
     // This is a root signature that is shared across all raytracing shaders invoked during a DispatchRays() call.
     {
-        CD3DX12_DESCRIPTOR_RANGE ranges[2]; // Perfomance TIP: Order from most frequent to least frequent.
-        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);  // 1 output texture
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 1);  // 2 static index and vertex buffers.
+        CD3DX12_DESCRIPTOR_RANGE ranges[4]; // Perfomance TIP: Order from most frequent to least frequent.
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);  // output texture
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);  // index buffer
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);  // vertex buffer
+        ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);  // material id buffer
 
         CD3DX12_ROOT_PARAMETER rootParameters[GlobalRootSignatureParams::Count];
         rootParameters[GlobalRootSignatureParams::OutputViewSlot].InitAsDescriptorTable(1, &ranges[0]);
         rootParameters[GlobalRootSignatureParams::AccelerationStructureSlot].InitAsShaderResourceView(0);
         rootParameters[GlobalRootSignatureParams::SceneConstantSlot].InitAsConstantBufferView(0);
-        rootParameters[GlobalRootSignatureParams::VertexBuffersSlot].InitAsDescriptorTable(1, &ranges[1]);
+        rootParameters[GlobalRootSignatureParams::IndexBuffersSlot].InitAsDescriptorTable(1, &ranges[1]);
+        rootParameters[GlobalRootSignatureParams::VertexBuffersSlot].InitAsDescriptorTable(1, &ranges[2]);
+        rootParameters[GlobalRootSignatureParams::MaterialIDBufferSlot].InitAsDescriptorTable(1, &ranges[3]);
         CD3DX12_ROOT_SIGNATURE_DESC globalRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
         SerializeAndCreateRaytracingRootSignature(globalRootSignatureDesc, &m_raytracingGlobalRootSignature);
     }
@@ -356,10 +359,12 @@ void D3D12Renderer::CreateDescriptorHeap()
     auto device = m_deviceResources->GetD3DDevice();
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
-    // Allocate a heap for 3 descriptors:
-    // 2 - vertex and index buffer SRVs
-    // 1 - raytracing output texture SRV
-    descriptorHeapDesc.NumDescriptors = 3; 
+    // Allocate a heap for 4 descriptors:
+    // 0 - raytracing output texture SRV
+    // 1 - index buffer
+    // 2 - vertex buffer 
+    // 3 - material id buffer
+    descriptorHeapDesc.NumDescriptors = 4; 
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     descriptorHeapDesc.NodeMask = 0;
@@ -390,14 +395,19 @@ void D3D12Renderer::BuildGeometry(toyraygun::Scene* scene)
         });
     }
 
+    std::vector<uint32_t> materialIDs;
+    for (int i = 0; i < scene->m_materialIDBuffer.size(); ++i)
+    {
+        materialIDs.push_back(scene->m_materialIDBuffer[i]);
+    }
+
     AllocateUploadBuffer(device, &indices[0], sizeof(Index) * indices.size(), &m_indexBuffer.resource);
     AllocateUploadBuffer(device, &vertices[0], sizeof(Vertex) * vertices.size(), &m_vertexBuffer.resource);
+    AllocateUploadBuffer(device, &materialIDs[0], sizeof(uint32_t) * materialIDs.size(), &m_materialIDBuffer.resource);
 
-    // Vertex buffer is passed to the shader along with index buffer as a descriptor table.
-    // Vertex buffer descriptor must follow index buffer descriptor in the descriptor heap.
-    UINT descriptorIndexIB = CreateBufferSRV(&m_indexBuffer, indices.size() / sizeof(Index), 0);
-    UINT descriptorIndexVB = CreateBufferSRV(&m_vertexBuffer, vertices.size(), sizeof(Vertex));
-    ThrowIfFalse(descriptorIndexVB == descriptorIndexIB + 1, "Vertex Buffer descriptor index must follow that of Index Buffer descriptor index!");
+    CreateBufferSRV(&m_indexBuffer, indices.size() / sizeof(Index), 0);
+    CreateBufferSRV(&m_vertexBuffer, vertices.size(), sizeof(Vertex));
+    CreateBufferSRV(&m_materialIDBuffer, materialIDs.size(), sizeof(uint32_t));
 }
 
 // Build acceleration structures needed for raytracing.
@@ -595,7 +605,9 @@ void D3D12Renderer::DoRaytracing()
     {
         descriptorSetCommandList->SetDescriptorHeaps(1, m_descriptorHeap.GetAddressOf());
         // Set index and successive vertex buffer decriptor tables
-        commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, m_indexBuffer.gpuDescriptorHandle);
+        commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::IndexBuffersSlot, m_indexBuffer.gpuDescriptorHandle);
+        commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, m_vertexBuffer.gpuDescriptorHandle);
+        commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::MaterialIDBufferSlot, m_materialIDBuffer.gpuDescriptorHandle);
         commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, m_raytracingOutputResourceUAVGpuDescriptor);
     };
 
@@ -667,6 +679,7 @@ void D3D12Renderer::ReleaseDeviceDependentResources()
     m_raytracingOutputResourceUAVDescriptorHeapIndex = UINT_MAX;
     m_indexBuffer.resource.Reset();
     m_vertexBuffer.resource.Reset();
+    m_materialIDBuffer.resource.Reset();
     m_perFrameConstants.Reset();
     m_rayGenShaderTable.Reset();
     m_missShaderTable.Reset();

@@ -13,7 +13,9 @@
 #include "engine/Renderer.h"
 #include "engine/D3D12/D3D12Shader.h"
 #include "engine/D3D12/DeviceResources.h"
+
 #include "engine/D3D12/ShaderCommon.h"
+using namespace shadercommon;
 
 #include <windows.h>
 #include <windowsx.h>
@@ -32,7 +34,9 @@ namespace GlobalRootSignatureParams {
         OutputViewSlot = 0,
         AccelerationStructureSlot,
         SceneConstantSlot,
+        IndexBuffersSlot,
         VertexBuffersSlot,
+        MaterialIDBufferSlot,
         Count 
     };
 }
@@ -110,6 +114,7 @@ private:
     };
     D3DBuffer m_indexBuffer;
     D3DBuffer m_vertexBuffer;
+    D3DBuffer m_materialIDBuffer;
 
     // Acceleration structure
     ComPtr<ID3D12Resource> m_bottomLevelAccelerationStructure;

@@ -12,8 +12,8 @@
 
 #include <bx/math.h>
 
-#define TRIANGLE_MASK_GEOMETRY 1
-#define TRIANGLE_MASK_LIGHT    2
+#define MATERIAL_DEFAULT  0
+#define MATERIAL_EMISSIVE 1
 
 namespace toyraygun
 {

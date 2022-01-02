@@ -54,7 +54,7 @@ void Scene::addCube(bx::Vec3 color, float* transformMtx)
         4, 7, 6
     };
     
-    addGeometry(verts, tris, 12, transformMtx, color, TRIANGLE_MASK_GEOMETRY);
+    addGeometry(verts, tris, 12, transformMtx, color, MATERIAL_DEFAULT);
 }
 
 void Scene::addPlane(bx::Vec3 color, float* transformMtx)
@@ -71,7 +71,7 @@ void Scene::addPlane(bx::Vec3 color, float* transformMtx)
         0, 3, 2,
     };
     
-    addGeometry(verts, tris, 2, transformMtx, color, TRIANGLE_MASK_GEOMETRY);
+    addGeometry(verts, tris, 2, transformMtx, color, MATERIAL_DEFAULT);
 }
 
 void Scene::addAreaLight(bx::Vec3 color, float* transformMtx)
@@ -88,7 +88,7 @@ void Scene::addAreaLight(bx::Vec3 color, float* transformMtx)
         0, 3, 2,
     };
     
-    addGeometry(verts, tris, 2, transformMtx, color, TRIANGLE_MASK_LIGHT);
+    addGeometry(verts, tris, 2, transformMtx, color, MATERIAL_EMISSIVE);
 }
 
 bx::Vec3 applyTransform(bx::Vec3 input, float* transformMtx, float w)
@@ -104,7 +104,7 @@ void Scene::addGeometry(bx::Vec3* vertices,
                         int triangleCount,
                         float* transformMtx,
                         bx::Vec3 color,
-                        unsigned int mask)
+                        unsigned int materialID)
 {
     for (int i = 0; i < triangleCount; ++i)
     {
@@ -123,7 +123,7 @@ void Scene::addGeometry(bx::Vec3* vertices,
             m_colorBuffer.push_back(color);
         }
         
-        // Masks is per-triangle, not per vertex.
-        m_maskBuffer.push_back(mask);
+        // Materials are per-triangle, not per vertex.
+        m_materialIDBuffer.push_back(materialID);
     }
 }

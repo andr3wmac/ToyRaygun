@@ -19,14 +19,14 @@ namespace toyraygun
             int triangleCount,
             float* transformMtx,
             bx::Vec3 color,
-            unsigned int mask);
+            unsigned int materialID);
 
     public:
         std::vector<bx::Vec3> m_vertexBuffer;
         std::vector<uint32_t> m_indexBuffer;
         std::vector<bx::Vec3> m_normalBuffer;
         std::vector<bx::Vec3> m_colorBuffer;
-        std::vector<uint32_t> m_maskBuffer;
+        std::vector<uint32_t> m_materialIDBuffer;
 
         void addCube(bx::Vec3 color, float* transform);
         void addPlane(bx::Vec3 color, float* transform);

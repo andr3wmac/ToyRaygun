@@ -46,7 +46,7 @@ Scene* createCornellBoxScene()
     
     // Light source
     bx::mtxSRT(transform, 0.5f, 1.98f, 0.5f, 0.0f, 0.0f, bx::kPi, 0.0f, 1.0f, 0.0f);
-    scene->addAreaLight(bx::Vec3(1.0f, 0.0f, 1.0f), transform);
+    scene->addAreaLight(bx::Vec3(1.0f, 1.0f, 1.0f), transform);
     
     delete[] transform;
 
