@@ -4,7 +4,13 @@
  */
 
 #import "MetalShader.h"
+using namespace toyraygun;
 
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
+
+bool MetalShader::compile()
+{
+    return true;
+}

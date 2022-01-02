@@ -38,7 +38,7 @@ project "ToyRaygun"
     characterset "ASCII"
     location ("build/" .. _ACTION)
 
-    debugdir "./runtime/"
+    debugdir "./"
 
     defines {
         "_THREAD_SAFE",

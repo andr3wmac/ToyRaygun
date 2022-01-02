@@ -50,6 +50,7 @@ namespace toyraygun
         virtual bool init(Platform* platform);
         virtual void destroy();
         virtual void loadScene(Scene* scene);
+        virtual Shader* getRaytracingShader();
         virtual void setRaytracingShader(Shader* shader);
         virtual void renderFrame();
     };

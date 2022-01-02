@@ -35,7 +35,8 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 //   allows it to accept per-frame update and drawable resize callbacks.
 @interface _MetalRenderer : NSObject
 
--(nonnull instancetype)initWithDevice:(nonnull id<MTLDevice>)device;
+-(nonnull instancetype)initWithDevice:(nonnull id<MTLDevice>)device
+                       parentRenderer:(toyraygun::MetalRenderer*)parent;
 - (void)resize:(CGSize)size;
 
 - (void)render:(nonnull id<CAMetalDrawable>)surface;
@@ -78,22 +79,22 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     NSUInteger _uniformBufferIndex;
 
     unsigned int _frameIndex;
+    
+@public
+    toyraygun::MetalRenderer* _parent;
 }
 
--(nonnull instancetype)initWithDevice:(nonnull id<MTLDevice>)device;
+-(nonnull instancetype)initWithDevice:(nonnull id<MTLDevice>)device
+                       parentRenderer:(toyraygun::MetalRenderer*)parent;
 {
     self = [super init];
 
     if (self)
     {
+        _parent = parent;
         _device = device;
         
         NSLog(@"Metal device: %@", _device.name);
-
-        _sem = dispatch_semaphore_create(maxFramesInFlight);
-        
-        [self loadMetal];
-        [self createPipelines];
     }
 
     return self;
@@ -112,9 +113,8 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
                                          options:compileOptions
                                            error:&compileError];
     
-    toyraygun::Shader rtShader;
-    rtShader.load("Shaders.shader");
-    _library = [_device newLibraryWithSource:[NSString stringWithCString:rtShader.getSourceText().c_str()
+    toyraygun::Shader* rtShader = _parent->getRaytracingShader();
+    _library = [_device newLibraryWithSource:[NSString stringWithCString:rtShader->getSourceText().c_str()
                                                                 encoding:[NSString defaultCStringEncoding]]
                                      options:compileOptions
                                        error:&compileError];
@@ -191,6 +191,11 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 
 - (void)loadScene:(toyraygun::Scene*)scene
 {
+    _sem = dispatch_semaphore_create(maxFramesInFlight);
+    
+    [self loadMetal];
+    [self createPipelines];
+    
     // Uniform buffer contains a few small values which change from frame to frame. We will have up to 3
     // frames in flight at once, so allocate a range of the buffer for each frame. The GPU will read from
     // one chunk while the CPU writes to the next chunk. Each chunk must be aligned to 256 bytes on macOS
@@ -548,15 +553,12 @@ using namespace toyraygun;
 
 bool MetalRenderer::init(Platform* platform)
 {
-    //const char* path = "Shaders.metal";
-    //const char* testData = textFileReadCF(path);
-    //printf("%s", testData);
-    
     CAMetalLayer* swapchain = (__bridge CAMetalLayer *)SDL_RenderGetMetalLayer(platform->getRenderer());
     const id<MTLDevice> gpu = swapchain.device;
     
-    _MetalRenderer* renderer = [[_MetalRenderer alloc] initWithDevice: gpu];
-    [renderer resize: CGSizeMake(1024, 768)];
+    _MetalRenderer* renderer = [[_MetalRenderer alloc] initWithDevice: gpu
+                                parentRenderer:this];
+    [renderer resize: CGSizeMake(platform->getWidth(), platform->getHeight())];
     
     _swapchain = swapchain;
     _renderer = renderer;

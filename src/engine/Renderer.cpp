@@ -21,6 +21,11 @@ void Renderer::loadScene(Scene* scene)
 
 }
 
+Shader* Renderer::getRaytracingShader()
+{
+    return m_rtShader;
+}
+
 void Renderer::setRaytracingShader(Shader* shader)
 {
 	m_rtShader = shader;
