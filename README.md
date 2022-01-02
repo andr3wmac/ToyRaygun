@@ -8,6 +8,7 @@ A fun project to learn the differences between DirectX 12, Metal, and Vulkan ray
 
 - DirectX12
 - Metal
+- Windows & OSX
 - Runtime shader compilation
 - Cornell Box demo scene
 - SDL2 window and input
@@ -17,6 +18,7 @@ A fun project to learn the differences between DirectX 12, Metal, and Vulkan ray
 # Planned Features
 
 - Vulkan
+- Linux
 - Generate shaders for all platforms from single source
 - Multi-bounce lighting on all APIs
 - OBJ and Texture support
