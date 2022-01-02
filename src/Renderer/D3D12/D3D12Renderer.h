@@ -47,13 +47,13 @@ namespace LocalRootSignatureParams {
     };
 }
 
-class D3D12Renderer : public Renderer
+class D3D12Renderer : public toyraygun::Renderer
 {
 public:
     D3D12Renderer();
 
     // Setup
-    virtual void init(Platform* platform);
+    virtual void init(toyraygun::Platform* platform);
     virtual void destroy();
     virtual void loadScene(Scene* scene);
 

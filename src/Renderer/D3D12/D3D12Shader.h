@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Shader.h"
+#include "Renderer/Shader.h"
 
 #include <windows.h>
 #include <windowsx.h>
@@ -16,7 +16,7 @@ using Microsoft::WRL::ComPtr;
 
 #include <dxcapi.h>
 
-class D3D12Shader : public Shader
+class D3D12Shader : public toyraygun::Shader
 {
 protected:
     static CComPtr<IDxcLibrary> m_library;

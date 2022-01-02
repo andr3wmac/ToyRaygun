@@ -6,6 +6,7 @@
 #include "Platform/Platform.h"
 #include "Renderer/Renderer.h"
 #include "Scene/Scene.h"
+using namespace toyraygun;
 
 #include <bx/math.h>
 

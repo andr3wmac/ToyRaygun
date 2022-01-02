@@ -30,7 +30,7 @@ D3D12Renderer::D3D12Renderer() :
     ReleaseDeviceDependentResources();
 }
 
-void D3D12Renderer::init(Platform* platform)
+void D3D12Renderer::init(toyraygun::Platform* platform)
 {
     m_deviceResources = std::make_unique<DeviceResources>(
         DXGI_FORMAT_R8G8B8A8_UNORM,
@@ -291,7 +291,7 @@ void D3D12Renderer::CreateRaytracingPipelineStateObject()
     // A hit group specifies closest hit, any hit and intersection shaders to be executed when a ray intersects the geometry's triangle/AABB.
     // In this sample, we only use triangle geometry with a closest hit shader, so others are not set.
     auto hitGroup = raytracingPipeline.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
-    hitGroup->SetClosestHitShaderImport(m_rtShader->getFunctionW(ShaderFunctionType::ClosestHit).c_str());
+    hitGroup->SetClosestHitShaderImport(m_rtShader->getFunctionW(toyraygun::ShaderFunctionType::ClosestHit).c_str());
     hitGroup->SetHitGroupExport(c_hitGroupName);
     hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
     
@@ -518,8 +518,8 @@ void D3D12Renderer::BuildShaderTables()
 
     auto GetShaderIdentifiers = [&](auto* stateObjectProperties)
     {
-        rayGenShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->getFunctionW(ShaderFunctionType::RayGen).c_str());
-        missShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->getFunctionW(ShaderFunctionType::Miss).c_str());
+        rayGenShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->getFunctionW(toyraygun::ShaderFunctionType::RayGen).c_str());
+        missShaderIdentifier = stateObjectProperties->GetShaderIdentifier(m_rtShader->getFunctionW(toyraygun::ShaderFunctionType::Miss).c_str());
         hitGroupShaderIdentifier = stateObjectProperties->GetShaderIdentifier(c_hitGroupName);
     };
 

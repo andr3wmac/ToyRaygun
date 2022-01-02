@@ -6,6 +6,7 @@
 //
 
 #include "Platform.h"
+using namespace toyraygun;
 
 #ifdef PLATFORM_WINDOWS
 #include "Renderer/D3D12/D3D12Shader.h"

@@ -21,27 +21,30 @@
 #    endif
 #endif
 
-class Shader;
-class Renderer;
-
-class Platform
+namespace toyraygun
 {
-protected:
-    bool m_quit;
-    SDL_Window* m_window;
-    SDL_Renderer* m_renderer;
-    
-public:
-    static Shader* createShader();
-    static Renderer* createRenderer();
+    class Shader;
+    class Renderer;
 
-    virtual void init();
-    virtual void destroy();
-    
-    virtual bool hasQuit();
-    virtual void pollEvents();
-    
-    SDL_Renderer* getRenderer() { return m_renderer; }
-};
+    class Platform
+    {
+    protected:
+        bool m_quit;
+        SDL_Window* m_window;
+        SDL_Renderer* m_renderer;
+
+    public:
+        static Shader* createShader();
+        static Renderer* createRenderer();
+
+        virtual void init();
+        virtual void destroy();
+
+        virtual bool hasQuit();
+        virtual void pollEvents();
+
+        SDL_Renderer* getRenderer() { return m_renderer; }
+    };
+}
 
 #endif /* Platform_H */

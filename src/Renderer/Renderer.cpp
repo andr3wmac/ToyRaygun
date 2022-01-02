@@ -1,4 +1,5 @@
 #include "Renderer.h"
+using namespace toyraygun;
 
 void Renderer::init(Platform* platform)
 {

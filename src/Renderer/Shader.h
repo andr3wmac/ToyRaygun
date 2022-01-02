@@ -6,42 +6,44 @@
 #include <vector>
 #include <sstream>
 
-enum ShaderFunctionType {
-    None = 0,
-    RayGen,
-    ClosestHit,
-    Miss,
-    Count
-};
-
-struct ShaderFunction {
-    std::string functionName;
-    ShaderFunctionType functionType;
-};
-
-class Shader
+namespace toyraygun
 {
-protected:
-    std::vector<ShaderFunction> m_functions;
+    enum ShaderFunctionType {
+        None = 0,
+        RayGen,
+        ClosestHit,
+        Miss,
+        Count
+    };
 
-public:
-    static std::vector<std::string> kSkipShaderIncludes;
-    static std::string loadAndProcessShader(std::string path);
-    
-    std::string m_sourcePath;
-    std::stringstream m_sourceText;
+    struct ShaderFunction {
+        std::string functionName;
+        ShaderFunctionType functionType;
+    };
 
-    virtual bool load(std::string path, bool doPreprocess = false);
-    virtual void preprocess();
-    virtual bool compile();
+    class Shader
+    {
+    protected:
+        std::vector<ShaderFunction> m_functions;
 
-    virtual void addFunction(std::string functionName, ShaderFunctionType functionType = ShaderFunctionType::None);
-    virtual std::vector<std::string> getFunctionNames();
-    virtual std::string getFunction(ShaderFunctionType functionType);
-    virtual std::wstring getFunctionW(ShaderFunctionType functionType);
+    public:
+        static std::vector<std::string> s_skipShaderIncludes;
 
-    virtual void* getBufferPointer();
-    virtual size_t getBufferSize();
-};
+        std::string m_sourcePath;
+        std::stringstream m_sourceText;
+
+        virtual bool load(std::string path, bool doPreprocess = false);
+        virtual void preprocess();
+        virtual bool compile();
+
+        virtual void addFunction(std::string functionName, ShaderFunctionType functionType = ShaderFunctionType::None);
+        virtual std::vector<std::string> getFunctionNames();
+        virtual std::string getFunction(ShaderFunctionType functionType);
+        virtual std::wstring getFunctionW(ShaderFunctionType functionType);
+
+        virtual void* getBufferPointer();
+        virtual size_t getBufferSize();
+    };
+}
 
 #endif
