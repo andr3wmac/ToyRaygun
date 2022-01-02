@@ -28,6 +28,8 @@ namespace toyraygun
     class Platform
     {
     protected:
+        int m_width;
+        int m_height;
         bool m_quit;
         SDL_Window* m_window;
         SDL_Renderer* m_renderer;
@@ -37,9 +39,11 @@ namespace toyraygun
         static Renderer* createRenderer();
         static std::string getRuntimeShaderPath();
 
-        virtual void init();
+        virtual void init(int width, int height);
         virtual void destroy();
 
+        virtual int getWidth();
+        virtual int getHeight();
         virtual bool hasQuit();
         virtual void pollEvents();
 

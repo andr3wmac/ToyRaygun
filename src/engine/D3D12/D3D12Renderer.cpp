@@ -18,20 +18,21 @@ const wchar_t* D3D12Renderer::c_hitGroupName = L"MyHitGroup";
 D3D12Renderer::D3D12Renderer() :
     m_raytracingOutputResourceUAVDescriptorHeapIndex(UINT_MAX)
 {
-    m_width = 1024;
-    m_height = 768;
-    m_aspectRatio = float(m_width) / float(m_height);
-
-    ReleaseWindowSizeDependentResources();
-    ReleaseDeviceDependentResources();
 }
 
 bool D3D12Renderer::init(toyraygun::Platform* platform)
 {
+    m_width = platform->getWidth();
+    m_height = platform->getHeight();
+    m_aspectRatio = float(m_width) / float(m_height);
+
+    ReleaseWindowSizeDependentResources();
+    ReleaseDeviceDependentResources();
+
     m_deviceResources = std::make_unique<DeviceResources>(
         DXGI_FORMAT_R8G8B8A8_UNORM,
         DXGI_FORMAT_UNKNOWN,
-        FrameCount,
+        kDefaultSwapChainBuffers,
         D3D_FEATURE_LEVEL_11_0,
         DeviceResources::c_RequireTearingSupport,
         UINT_MAX

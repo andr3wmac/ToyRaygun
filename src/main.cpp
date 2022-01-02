@@ -56,7 +56,7 @@ Scene* createCornellBoxScene()
 int main (int argc, char *args[])
 {
     Platform* platform = new Platform();
-    platform->init();
+    platform->init(1024, 768);
     
     Shader* rtShader = Platform::createShader();
     if (rtShader->load("Raytracing.shader", false))

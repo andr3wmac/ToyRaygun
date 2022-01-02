@@ -45,16 +45,18 @@ std::string Platform::getRuntimeShaderPath()
 #endif
 }
 
-void Platform::init()
+void Platform::init(int width, int height)
 {
     m_quit = false;
+    m_width = width;
+    m_height = height;
     
 #ifdef __APPLE__
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
 #endif
     
     SDL_InitSubSystem(SDL_INIT_VIDEO);
-    m_window = SDL_CreateWindow("Toy Raygun", 32, 32, 1024, 768, SDL_WINDOW_ALLOW_HIGHDPI);
+    m_window = SDL_CreateWindow("Toy Raygun", 32, 32, m_width, m_height, SDL_WINDOW_ALLOW_HIGHDPI);
     m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_PRESENTVSYNC);
 }
 
@@ -63,6 +65,16 @@ void Platform::destroy()
     SDL_DestroyRenderer(m_renderer);
     SDL_DestroyWindow(m_window);
     SDL_Quit();
+}
+
+int Platform::getWidth()
+{
+    return m_width;
+}
+
+int Platform::getHeight()
+{
+    return m_height;
 }
 
 bool Platform::hasQuit()

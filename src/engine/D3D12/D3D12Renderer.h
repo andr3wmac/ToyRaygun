@@ -58,7 +58,7 @@ public:
     virtual void renderFrame();
 
 private:
-    static const UINT FrameCount = 3;
+    static const UINT kDefaultSwapChainBuffers = 3;
 
     // Viewport dimensions.
     UINT m_width;
@@ -98,7 +98,7 @@ private:
     UINT m_descriptorSize;
     
     // Raytracing scene
-    SceneConstantBuffer m_sceneCB[FrameCount];
+    SceneConstantBuffer m_sceneCB[kDefaultSwapChainBuffers];
     CubeConstantBuffer m_cubeCB;
 
     // Geometry
