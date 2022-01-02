@@ -2,25 +2,26 @@
 
 # What is it?
 
-A personal project to learn the differences between DirectX 12, Metal, and Vulkan raytracing APIs by abstracting them into a simple toy raytracer.
+A fun project to learn the differences between DirectX 12, Metal, and Vulkan raytracing APIs by abstracting them into a simple toy raytracer.
 
 # Features
 
 - DirectX12
 - Metal
-- Runtime Shader Compilation
-- Cornell Box Demo Scene
+- Runtime shader compilation
+- Cornell Box demo scene
 - SDL2 window and input
 - Direct lighting with shadows
+- Multi-bounce lighting on Metal
 
 # Planned Features
 
 - Vulkan
-- Generate shaders for all platforms from single source.
-- Multi bounce lighting
+- Generate shaders for all platforms from single source
+- Multi-bounce lighting on all APIs
 - OBJ and Texture support
 
-# Tech
+# Dependencies
 
 - [bx](https://github.com/bkaradzic/bx) as base library for math, etc.
 - [SDL2](https://www.libsdl.org/) for windowing and input.
