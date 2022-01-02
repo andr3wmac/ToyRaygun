@@ -1,4 +1,4 @@
-![Toy Raygun Logo](logo.png?raw=true "Toy Raygun Logo")
+![Toy Raygun Logo](img/logo.png?raw=true "Toy Raygun Logo")
 
 # What is it?
 
