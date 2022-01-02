@@ -1,13 +1,12 @@
 /*
-See LICENSE folder for this sample’s licensing information.
-
-Abstract:
-Implementation for scene creation functions
-*/
-
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+ */
 
 #include "Scene.h"
-#include "Renderer/Renderer.h"
+#include "engine/Renderer.h"
+using namespace toyraygun;
+
 #include <iostream>
 #include <bx/math.h>
 

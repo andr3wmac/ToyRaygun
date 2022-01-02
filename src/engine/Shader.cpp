@@ -1,3 +1,8 @@
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+ */
+
 #include "Shader.h"
 
 #include <fstream>
@@ -18,10 +23,13 @@ std::vector<std::string> Shader::s_skipShaderIncludes
 
 bool Shader::load(std::string path, bool doPreprocess)
 {
-    m_sourcePath = path;
+    char fullPath[_MAX_PATH];
+    snprintf(fullPath, _MAX_PATH, "%s/%s", Platform::getRuntimeShaderPath().c_str(), path.c_str());
+
+    m_sourcePath = fullPath;
     m_sourceText.clear();
 
-    std::ifstream shaderFile(path);
+    std::ifstream shaderFile(m_sourcePath);
     if (shaderFile) 
     {
         m_sourceText << shaderFile.rdbuf();

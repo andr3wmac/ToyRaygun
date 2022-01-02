@@ -3,9 +3,9 @@
  * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
  */
 
-#include "Platform/Platform.h"
-#include "Renderer/Renderer.h"
-#include "Scene/Scene.h"
+#include "platform/Platform.h"
+#include "engine/Renderer.h"
+#include "engine/Scene.h"
 using namespace toyraygun;
 
 #include <bx/math.h>
@@ -48,6 +48,8 @@ Scene* createCornellBoxScene()
     bx::mtxSRT(transform, 0.5f, 1.98f, 0.5f, 0.0f, 0.0f, bx::kPi, 0.0f, 1.0f, 0.0f);
     scene->addAreaLight(bx::Vec3(1.0f, 0.0f, 1.0f), transform);
     
+    delete[] transform;
+
     return scene;
 }
 
@@ -57,7 +59,7 @@ int main (int argc, char *args[])
     platform->init();
     
     Shader* rtShader = Platform::createShader();
-    if (rtShader->load("shaders/d3d12/Raytracing.shader", false))
+    if (rtShader->load("Raytracing.shader", false))
     {
         rtShader->addFunction("MyRaygenShader", ShaderFunctionType::RayGen);
         rtShader->addFunction("MyClosestHitShader", ShaderFunctionType::ClosestHit);
@@ -73,7 +75,10 @@ int main (int argc, char *args[])
     }
 
     Renderer* renderer = Platform::createRenderer();
-    renderer->init(platform);
+    if (!renderer->init(platform))
+    {
+        return -1;
+    }
     renderer->setRaytracingShader(rtShader);
     
     Scene* scene = createCornellBoxScene();

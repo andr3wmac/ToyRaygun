@@ -1,13 +1,11 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+
+ * This renderer is based on D3D12 Raytracing Sample from:
+     https://github.com/microsoft/DirectX-Graphics-Samples/
+ * By Microsoft
+*/
 
 #include "D3D12Renderer.h"
 #include "DirectXRaytracingHelper.h"
@@ -18,9 +16,7 @@ using namespace DX;
 const wchar_t* D3D12Renderer::c_hitGroupName = L"MyHitGroup";
 
 D3D12Renderer::D3D12Renderer() :
-    m_raytracingOutputResourceUAVDescriptorHeapIndex(UINT_MAX),
-    m_curRotationAngleRad(0.0f),
-    m_adapterIDoverride(UINT_MAX)
+    m_raytracingOutputResourceUAVDescriptorHeapIndex(UINT_MAX)
 {
     m_width = 1024;
     m_height = 768;
@@ -30,30 +26,30 @@ D3D12Renderer::D3D12Renderer() :
     ReleaseDeviceDependentResources();
 }
 
-void D3D12Renderer::init(toyraygun::Platform* platform)
+bool D3D12Renderer::init(toyraygun::Platform* platform)
 {
     m_deviceResources = std::make_unique<DeviceResources>(
         DXGI_FORMAT_R8G8B8A8_UNORM,
         DXGI_FORMAT_UNKNOWN,
         FrameCount,
         D3D_FEATURE_LEVEL_11_0,
-        // Sample shows handling of use cases with tearing support, which is OS dependent and has been supported since TH2.
-        // Since the sample requires build 1809 (RS5) or higher, we don't need to handle non-tearing cases.
         DeviceResources::c_RequireTearingSupport,
-        m_adapterIDoverride
+        UINT_MAX
         );
 
-    //m_deviceResources->RegisterDeviceNotify(this);
     m_deviceResources->SetWindow(GetActiveWindow(), m_width, m_height);
     m_deviceResources->InitializeDXGIAdapter();
 
-    ThrowIfFalse(IsDirectXRaytracingSupported(m_deviceResources->GetAdapter()),
-        "ERROR: DirectX Raytracing is not supported by your OS, GPU and/or driver.\n\n");
+    if (!IsDirectXRaytracingSupported(m_deviceResources->GetAdapter()))
+    {
+        OutputDebugString("ERROR: DirectX Raytracing is not supported by your OS, GPU and/or driver.");
+        return false;
+    }
 
     m_deviceResources->CreateDeviceResources();
     m_deviceResources->CreateWindowSizeDependentResources();
 
-    //InitializeScene();
+    return true;
 }
 
 // Update camera matrices passed into the shader.
@@ -71,7 +67,7 @@ void D3D12Renderer::UpdateCameraMatrices()
 }
 
 // Initialize scene rendering parameters.
-void D3D12Renderer::loadScene(Scene* scene)
+void D3D12Renderer::loadScene(toyraygun::Scene* scene)
 {
     auto frameIndex = m_deviceResources->GetCurrentFrameIndex();
 
@@ -131,7 +127,7 @@ void D3D12Renderer::loadScene(Scene* scene)
     CreateRootSignatures();
 
     // Create a raytracing pipeline state object which defines the binding of shaders, state and resources to be used during raytracing.
-    CreateRaytracingPipelineStateObject();
+    createRaytracingPipelineStateObject();
 
     // Create a heap for descriptors.
     CreateDescriptorHeap();
@@ -251,33 +247,46 @@ void D3D12Renderer::CreateLocalRootSignatureSubobjects(CD3DX12_STATE_OBJECT_DESC
 // Create a raytracing pipeline state object (RTPSO).
 // An RTPSO represents a full set of shaders reachable by a DispatchRays() call,
 // with all configuration options resolved, such as local signatures and other state.
-void D3D12Renderer::CreateRaytracingPipelineStateObject()
+void D3D12Renderer::createRaytracingPipelineStateObject()
 {
-    // Create 7 subobjects that combine into a RTPSO:
-    // Subobjects need to be associated with DXIL exports (i.e. shaders) either by way of default or explicit associations.
-    // Default association applies to every exported shader entrypoint that doesn't have any of the same type of subobject associated with it.
-    // This simple sample utilizes default shader association except for local root signature subobject
-    // which has an explicit association specified purely for demonstration purposes.
-    // 1 - DXIL library
-    // 1 - Triangle hit group
-    // 1 - Shader config
-    // 2 - Local root signature and association
-    // 1 - Global root signature
-    // 1 - Pipeline config
+    /* Example of working RTPSO:
+    --------------------------------------------------------------------
+    | D3D12 State Object 0x0000001F4DDCF770: Raytracing Pipeline
+    | [0]: DXIL Library 0x00000138CB68FDB0, 9532 bytes
+    |  [0]: MyRaygenShader
+    |  [1]: MyClosestHitShader
+    |  [2]: MyMissShader
+    |--------------------------------------------------------------------
+    | [1]: Hit Group (MyHitGroup)
+    |  [0]: Any Hit Import: [none]
+    |  [1]: Closest Hit Import: MyClosestHitShader
+    |  [2]: Intersection Import: [none]
+    |--------------------------------------------------------------------
+    | [2]: Raytracing Shader Config
+    |  [0]: Max Payload Size: 16 bytes
+    |  [1]: Max Attribute Size: 8 bytes
+    |--------------------------------------------------------------------
+    | [3]: Local Root Signature 0x00000138CB859720
+    |--------------------------------------------------------------------
+    | [4]: Subobject to Exports Association (Subobject [3])
+    |  [0]: MyHitGroup
+    |--------------------------------------------------------------------
+    | [5]: Global Root Signature 0x00000138CB859760
+    |--------------------------------------------------------------------
+    | [6]: Raytracing Pipeline Config
+    |  [0]: Max Recursion Depth: 1
+    |--------------------------------------------------------------------
+    */
+
     CD3DX12_STATE_OBJECT_DESC raytracingPipeline{ D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
 
-
-    // DXIL library
-    // This contains the shaders and their entrypoints for the state object.
-    // Since shaders are not considered a subobject, they need to be passed in via DXIL library subobjects.
-
-
+    // [0] : DXIL Library
+    // Load precompiled shader that was set for the renderer.
     auto lib = raytracingPipeline.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
     D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE(m_rtShader->getBufferPointer(), m_rtShader->getBufferSize());
     lib->SetDXILLibrary(&libdxil);
-    // Define which shader exports to surface from the library.
-    // If no shader exports are defined for a DXIL library subobject, all shaders will be surfaced.
-    // In this sample, this could be ommited for convenience since the sample uses all shaders in the library. 
+
+    // Export each specified function to use in the pipeline.
     {
         std::vector<std::string> functionNames = m_rtShader->getFunctionNames();
         for (int i = 0; i < functionNames.size(); ++i)
@@ -287,7 +296,7 @@ void D3D12Renderer::CreateRaytracingPipelineStateObject()
         }
     }
     
-    // Triangle hit group
+    // [1] : Hit Group
     // A hit group specifies closest hit, any hit and intersection shaders to be executed when a ray intersects the geometry's triangle/AABB.
     // In this sample, we only use triangle geometry with a closest hit shader, so others are not set.
     auto hitGroup = raytracingPipeline.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
@@ -295,33 +304,35 @@ void D3D12Renderer::CreateRaytracingPipelineStateObject()
     hitGroup->SetHitGroupExport(c_hitGroupName);
     hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
     
-    // Shader config
+    // [2]: Raytracing Shader Config
     // Defines the maximum sizes in bytes for the ray payload and attribute structure.
     auto shaderConfig = raytracingPipeline.CreateSubobject<CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
     UINT payloadSize = sizeof(XMFLOAT4);    // float4 pixelColor
     UINT attributeSize = sizeof(XMFLOAT2);  // float2 barycentrics
     shaderConfig->Config(payloadSize, attributeSize);
 
-    // Local root signature and shader association
+    // [3]: Local Root Signature
+    // [4]: Subobject to Exports Association
     // This is a root signature that enables a shader to have unique arguments that come from shader tables.
     CreateLocalRootSignatureSubobjects(&raytracingPipeline);
 
-    // Global root signature
+    // [5]: Global Root Signature
     // This is a root signature that is shared across all raytracing shaders invoked during a DispatchRays() call.
     auto globalRootSignature = raytracingPipeline.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
     globalRootSignature->SetRootSignature(m_raytracingGlobalRootSignature.Get());
 
-    // Pipeline config
+    // [6]: Raytracing Pipeline Config
     // Defines the maximum TraceRay() recursion depth.
     auto pipelineConfig = raytracingPipeline.CreateSubobject<CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
-    // PERFOMANCE TIP: Set max recursion depth as low as needed 
+
+    // PERFORMANCE TIP: Set max recursion depth as low as needed 
     // as drivers may apply optimization strategies for low recursion depths.
     UINT maxRecursionDepth = 1; // ~ primary rays only. 
     pipelineConfig->Config(maxRecursionDepth);
 
-//#if _DEBUG
+#if _DEBUG
     PrintStateObjectDesc(raytracingPipeline);
-//#endif
+#endif
 
     // Create the state object.
     ThrowIfFailed(m_dxrDevice->CreateStateObject(raytracingPipeline, IID_PPV_ARGS(&m_dxrStateObject)), "Couldn't create DirectX Raytracing state object.\n");
@@ -368,7 +379,7 @@ void D3D12Renderer::CreateDescriptorHeap()
 }
 
 // Build geometry used in the sample.
-void D3D12Renderer::BuildGeometry(Scene* scene)
+void D3D12Renderer::BuildGeometry(toyraygun::Scene* scene)
 {
     auto device = m_deviceResources->GetD3DDevice();
 

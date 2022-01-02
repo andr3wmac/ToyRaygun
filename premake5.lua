@@ -56,12 +56,10 @@ project "ToyRaygun"
     files { 
         path.join(SRC_DIR, "*.cpp"), 
         path.join(SRC_DIR, "*.h"),
-        path.join(SRC_DIR, "Platform/*.cpp"), 
-        path.join(SRC_DIR, "Platform/*.h"),
-        path.join(SRC_DIR, "Renderer/*.cpp"), 
-        path.join(SRC_DIR, "Renderer/*.h"),
-        path.join(SRC_DIR, "Scene/*.cpp"), 
-        path.join(SRC_DIR, "Scene/*.h"),
+        path.join(SRC_DIR, "engine/*.cpp"), 
+        path.join(SRC_DIR, "engine/*.h"),
+        path.join(SRC_DIR, "platform/*.cpp"), 
+        path.join(SRC_DIR, "platform/*.h")
     }
 
     filter "configurations:Debug*"
@@ -82,8 +80,8 @@ project "ToyRaygun"
         }
 
         files {
-            path.join(SRC_DIR, "Renderer/D3D12/**.cpp"),
-            path.join(SRC_DIR, "Renderer/D3D12/**.h"),
+            path.join(SRC_DIR, "engine/D3D12/**.cpp"),
+            path.join(SRC_DIR, "engine/D3D12/**.h"),
             path.join(RUNTIME_DIR, "shaders/d3d12/**.shader")
         }
 
@@ -106,8 +104,8 @@ project "ToyRaygun"
 
     filter "system:macosx"
         files {
-            path.join(SRC_DIR, "Renderer/Metal/**.mm"),
-            path.join(SRC_DIR, "Renderer/Metal/**.h"),
+            path.join(SRC_DIR, "engine/Metal/**.mm"),
+            path.join(SRC_DIR, "engine/Metal/**.h"),
             path.join(RUNTIME_DIR, "shaders/metal/**.shader")
         }
 

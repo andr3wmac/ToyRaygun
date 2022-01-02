@@ -1,7 +1,12 @@
-#ifndef _SHADER_H_
-#define _SHADER_H_
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+ */
 
-#include "Platform/Platform.h"
+#ifndef SHADER_HEADER_GUARD
+#define SHADER_HEADER_GUARD
+
+#include "platform/Platform.h"
 #include <string>
 #include <vector>
 #include <sstream>
@@ -46,4 +51,4 @@ namespace toyraygun
     };
 }
 
-#endif
+#endif // SHADER_HEADER_GUARD

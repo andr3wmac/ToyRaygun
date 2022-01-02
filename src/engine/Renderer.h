@@ -1,9 +1,15 @@
-#ifndef _RENDERERS_BASE_
-#define _RENDERERS_BASE_
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+ */
 
-#include "Platform/Platform.h"
-#include "Scene/Scene.h"
-#include "Shader.h"
+#ifndef RENDERER_HEADER_GUARD
+#define RENDERER_HEADER_GUARD
+
+#include "platform/Platform.h"
+#include "engine/Scene.h"
+#include "engine/Shader.h"
+
 #include <bx/math.h>
 
 #define TRIANGLE_MASK_GEOMETRY 1
@@ -41,7 +47,7 @@ namespace toyraygun
         Shader* m_rtShader;
 
     public:
-        virtual void init(Platform* platform);
+        virtual bool init(Platform* platform);
         virtual void destroy();
         virtual void loadScene(Scene* scene);
         virtual void setRaytracingShader(Shader* shader);
@@ -49,4 +55,4 @@ namespace toyraygun
     };
 }
 
-#endif
+#endif // RENDERER_HEADER_GUARD

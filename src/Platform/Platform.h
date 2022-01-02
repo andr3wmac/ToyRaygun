@@ -1,13 +1,12 @@
-//
-//  Platform.hpp
-//  ToyRaygun
-//
-//  Created by Andrew on 2021-12-22.
-//
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+ */
 
-#ifndef Platform_H
-#define Platform_H
+#ifndef PLATFORM_HEADER_GUARD
+#define PLATFORM_HEADER_GUARD
 
+#include <string>
 #include <stdio.h>
 #include <SDL.h>
 #undef main
@@ -36,6 +35,7 @@ namespace toyraygun
     public:
         static Shader* createShader();
         static Renderer* createRenderer();
+        static std::string getRuntimeShaderPath();
 
         virtual void init();
         virtual void destroy();
@@ -47,4 +47,4 @@ namespace toyraygun
     };
 }
 
-#endif /* Platform_H */
+#endif // PLATFORM_HEADER_GUARD

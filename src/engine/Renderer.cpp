@@ -1,9 +1,14 @@
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+ */
+
 #include "Renderer.h"
 using namespace toyraygun;
 
-void Renderer::init(Platform* platform)
+bool Renderer::init(Platform* platform)
 {
-
+	return false;
 }
 
 void Renderer::destroy()

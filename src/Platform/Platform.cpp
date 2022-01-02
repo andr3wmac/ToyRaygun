@@ -1,19 +1,17 @@
-//
-//  Platform.cpp
-//  ToyRaygun
-//
-//  Created by Andrew on 2021-12-22.
-//
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+ */
 
 #include "Platform.h"
 using namespace toyraygun;
 
 #ifdef PLATFORM_WINDOWS
-#include "Renderer/D3D12/D3D12Shader.h"
-#include "Renderer/D3D12/D3D12Renderer.h"
+#include "engine/D3D12/D3D12Shader.h"
+#include "engine/D3D12/D3D12Renderer.h"
 #else
-#include "Renderer/Metal/MetalShader.h"
-#include "Renderer/Metal/MetalRenderer.h"
+#include "engine/Metal/MetalShader.h"
+#include "engine/Metal/MetalRenderer.h"
 #endif
 
 Shader* Platform::createShader()
@@ -35,6 +33,15 @@ Renderer* Platform::createRenderer()
 #else
     MetalRenderer* newRenderer = new MetalRenderer();
     return newRenderer;
+#endif
+}
+
+std::string Platform::getRuntimeShaderPath()
+{
+#ifdef PLATFORM_WINDOWS
+    return "shaders/d3d12/";
+#else
+    return "shaders/metal/";
 #endif
 }
 

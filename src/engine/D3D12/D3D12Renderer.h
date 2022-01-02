@@ -1,18 +1,19 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+
+ * This renderer is based on D3D12 Raytracing Sample from:
+     https://github.com/microsoft/DirectX-Graphics-Samples/
+ * By Microsoft 
+*/
 
 #pragma once
 
-#include "Renderer/Renderer.h"
-#include "Renderer/D3D12/D3D12Shader.h"
+#include "platform/Platform.h"
+#include "engine/Renderer.h"
+#include "engine/D3D12/D3D12Shader.h"
+#include "engine/D3D12/DeviceResources.h"
+#include "engine/D3D12/ShaderCommon.h"
 
 #include <windows.h>
 #include <windowsx.h>
@@ -25,10 +26,6 @@
 #include <atlbase.h>
 #include <wrl.h>
 using Microsoft::WRL::ComPtr;
-
-#include "D3D12Shader.h"
-#include "ShaderCommon.h"
-#include "DeviceResources.h"
 
 namespace GlobalRootSignatureParams {
     enum Value {
@@ -53,9 +50,9 @@ public:
     D3D12Renderer();
 
     // Setup
-    virtual void init(toyraygun::Platform* platform);
+    virtual bool init(toyraygun::Platform* platform);
     virtual void destroy();
-    virtual void loadScene(Scene* scene);
+    virtual void loadScene(toyraygun::Scene* scene);
 
     // Rendering
     virtual void renderFrame();
@@ -68,7 +65,11 @@ private:
     UINT m_height;
     float m_aspectRatio;
 
-    UINT m_adapterIDoverride;
+    // Camera
+    XMVECTOR m_eye;
+    XMVECTOR m_at;
+    XMVECTOR m_up;
+
     std::unique_ptr<DX::DeviceResources> m_deviceResources;
 
     // We'll allocate space for several of these and they will need to be padded for alignment.
@@ -121,22 +122,17 @@ private:
 
     // Shader tables
     static const wchar_t* c_hitGroupName;
-    static const wchar_t* c_raygenShaderName;
-    static const wchar_t* c_closestHitShaderName;
-    static const wchar_t* c_missShaderName;
     ComPtr<ID3D12Resource> m_missShaderTable;
     ComPtr<ID3D12Resource> m_hitGroupShaderTable;
     ComPtr<ID3D12Resource> m_rayGenShaderTable;
-    
-    // Application state
-    float m_curRotationAngleRad;
-    XMVECTOR m_eye;
-    XMVECTOR m_at;
-    XMVECTOR m_up;
 
+    // Raytracing pipeline
+    void DoRaytracing();
+    void createRaytracingPipelineStateObject();
+
+    // Other
     void UpdateCameraMatrices();
     void RecreateD3D();
-    void DoRaytracing();
     void CreateConstantBuffers();
     void CreateWindowSizeDependentResources();
     void ReleaseDeviceDependentResources();
@@ -145,10 +141,10 @@ private:
     void SerializeAndCreateRaytracingRootSignature(D3D12_ROOT_SIGNATURE_DESC& desc, ComPtr<ID3D12RootSignature>* rootSig);
     void CreateRootSignatures();
     void CreateLocalRootSignatureSubobjects(CD3DX12_STATE_OBJECT_DESC* raytracingPipeline);
-    void CreateRaytracingPipelineStateObject();
+    
     void CreateDescriptorHeap();
     void CreateRaytracingOutputResource();
-    void BuildGeometry(Scene* scene);
+    void BuildGeometry(toyraygun::Scene* scene);
     void BuildAccelerationStructures();
     void BuildShaderTables();
     void UpdateForSizeChange(UINT clientWidth, UINT clientHeight);
