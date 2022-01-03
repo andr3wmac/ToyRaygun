@@ -1,7 +1,7 @@
 local pkgconfig = require 'pkgconfig'
 
 local LIB_DIR = "lib/"
-local RUNTIME_DIR = "runtime/"
+local SHADERS_DIR = "shaders/"
 local SRC_DIR = "src/"
 
 solution "ToyRaygun"
@@ -82,7 +82,7 @@ project "ToyRaygun"
         files {
             path.join(SRC_DIR, "engine/D3D12/**.cpp"),
             path.join(SRC_DIR, "engine/D3D12/**.h"),
-            path.join(RUNTIME_DIR, "shaders/d3d12/**.shader")
+            path.join(SHADERS_DIR, "d3d12/**.shader")
         }
 
         links { 
@@ -106,7 +106,7 @@ project "ToyRaygun"
         files {
             path.join(SRC_DIR, "engine/Metal/**.mm"),
             path.join(SRC_DIR, "engine/Metal/**.h"),
-            path.join(RUNTIME_DIR, "shaders/metal/**.shader")
+            path.join(SHADERS_DIR, "metal/**.shader")
         }
 
         libdirs { 

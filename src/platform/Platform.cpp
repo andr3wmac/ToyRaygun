@@ -39,9 +39,9 @@ Renderer* Platform::createRenderer()
 std::string Platform::getRuntimeShaderPath()
 {
 #ifdef PLATFORM_WINDOWS
-    return "runtime/shaders/d3d12/";
+    return "shaders/d3d12/";
 #else
-    return "runtime/shaders/metal/";
+    return "shaders/metal/";
 #endif
 }
 
