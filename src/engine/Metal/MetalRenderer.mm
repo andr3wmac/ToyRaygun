@@ -338,7 +338,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     float invViewProjMtx[16];
     bx::mtxInverse(invViewProjMtx, viewProjMtx);
     
-    uniforms->camera.position.set(bx::Vec3(0.0f, 1.0f, 3.38f));
+    uniforms->camera.position.set(_parent->getCameraPosition());
     uniforms->camera.invViewProjMtx.set(invViewProjMtx);
     
     uniforms->light.position.set(bx::Vec3(0.0f, 1.98f, 0.0f));

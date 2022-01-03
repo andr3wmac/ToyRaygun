@@ -6,7 +6,7 @@
 #ifndef METAL_UNIFORMS_HEADER_GUARD
 #define METAL_UNIFORMS_HEADER_GUARD
 
-#include "platform/Platform.h"
+#include "engine/Platform.h"
 
 #include <bx/math.h>
 #include <simd/simd.h>
