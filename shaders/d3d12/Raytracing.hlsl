@@ -7,9 +7,6 @@
  * By Microsoft
 */
 
-#define MATERIAL_DEFAULT  1
-#define MATERIAL_EMISSIVE 2
-
 #include "shaders/common.h"
 
 struct Vertex
