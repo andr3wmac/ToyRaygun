@@ -29,8 +29,8 @@ A fun project to explore the differences between DirectX 12, Metal, and Vulkan r
 
 # Screenshots
 
-## D3D12
-![Toy Raygun D3D12](img/screenshot_d3d12.png?raw=true "Toy Raygun D3D12")
-
 ## Metal
 ![Toy Raygun Metal](img/screenshot_metal.png?raw=true "Toy Raygun Metal")
+
+## D3D12
+![Toy Raygun D3D12](img/screenshot_d3d12.png?raw=true "Toy Raygun D3D12")
