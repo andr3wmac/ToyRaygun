@@ -1,10 +1,11 @@
-//
-//  Copy.metal
-//  MPSPathTracingSample
-//
-//  Created by Andrew on 2021-12-12.
-//  Copyright © 2021 Apple. All rights reserved.
-//
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+ 
+ * This shader is based on Metal for Accelerating Ray Tracing from:
+   https://developer.apple.com/documentation/metalperformanceshaders/metal_for_accelerating_ray_tracing
+ * By Apple
+ */
 
 #include <metal_stdlib>
 

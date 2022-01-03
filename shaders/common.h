@@ -79,46 +79,6 @@ inline float3 sampleCosineWeightedHemisphere(float2 u)
     return float3(sin_theta * cos_phi, cos_theta, sin_theta * sin_phi);
 }
 
-// Maps two uniformly random numbers to the surface of a two-dimensional area light
-// source and returns the direction to this point, the amount of light which travels
-// between the intersection point and the sample point on the light source, as well
-// as the distance between these two points.
-inline void sampleAreaLight(constant AreaLight & light,
-                            float2 u,
-                            float3 position,
-                            thread float3 & lightDirection,
-                            thread float3 & lightColor,
-                            thread float & lightDistance)
-{
-    // Map to -1..1
-    u = u * 2.0f - 1.0f;
-    
-    // Transform into light's coordinate system
-    float3 samplePosition = light.position +
-                            light.right * u.x +
-                            light.up * u.y;
-    
-    // Compute vector from sample point on light source to intersection point
-    lightDirection = samplePosition - position;
-    
-    lightDistance = length(lightDirection);
-    
-    float inverseLightDistance = 1.0f / max(lightDistance, 1e-3f);
-    
-    // Normalize the light direction
-    lightDirection *= inverseLightDistance;
-    
-    // Start with the light's color
-    lightColor = light.color;
-    
-    // Light falls off with the inverse square of the distance to the intersection point
-    lightColor *= (inverseLightDistance * inverseLightDistance);
-    
-    // Light also falls off with the cosine of angle between the intersection point and
-    // the light source
-    lightColor *= saturate(dot(-lightDirection, light.forward));
-}
-
 // Aligns a direction on the unit hemisphere such that the hemisphere's "up" direction
 // (0, 1, 0) maps to the given surface normal direction
 inline float3 alignHemisphereWithNormal(float3 sample, float3 normal) {
@@ -136,6 +96,55 @@ inline float3 alignHemisphereWithNormal(float3 sample, float3 normal) {
     // Map the direction on the unit hemisphere to the coordinate system aligned
     // with the normal.
     return sample.x * right + sample.y * up + sample.z * forward;
+}
+
+struct LightSample
+{
+    float3 direction;
+    float3 color;
+    float distance;
+};
+
+inline LightSample sampleAreaLight(AreaLight light,
+                                   float2 u,
+                                   float3 position,
+                                   float3 vertexNormal)
+{
+    LightSample result;
+    
+    // Map to -1..1
+    u = u * 2.0f - 1.0f;
+    
+    // Transform into light's coordinate system
+    float3 samplePosition = light.position +
+                            light.right * u.x +
+                            light.up * u.y;
+    
+    // Compute vector from sample point on light source to intersection point
+    result.direction = samplePosition - position;
+    
+    result.distance = length(result.direction);
+    
+    float inverseLightDistance = 1.0f / max(result.distance, 1e-3f);
+    
+    // Normalize the light direction
+    result.direction *= inverseLightDistance;
+    
+    // Start with the light's color
+    result.color = light.color;
+    
+    // Light falls off with the inverse square of the distance to the intersection point
+    result.color *= (inverseLightDistance * inverseLightDistance);
+    
+    // Light also falls off with the cosine of angle between the intersection point and
+    // the light source
+    result.color *= saturate(dot(-result.direction, light.forward));
+    
+    // Scale the light color by the cosine of the angle between the light direction and
+    // surface normal
+    result.color *= saturate(dot(vertexNormal, result.direction));
+    
+    return result;
 }
 
 #endif // SHADERS_COMMON_HEADER_GUARD

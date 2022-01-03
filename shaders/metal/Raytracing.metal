@@ -124,111 +124,93 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                         texture2d<unsigned int> randomTex,
                         texture2d<float, access::write> dstTex)
 {
-    if (tid.x < uniforms.width && tid.y < uniforms.height) {
-        unsigned int rayIdx = tid.y * uniforms.width + tid.x;
-        device Ray & ray = rays[rayIdx];
-        device Ray & shadowRay = shadowRays[rayIdx];
-        device Intersection & intersection = intersections[rayIdx];
+    // Exit if we're not inside the screen.
+    if (tid.x >= uniforms.width || tid.y >= uniforms.height)
+    {
+        return;
+    }
+    
+    unsigned int rayIdx = tid.y * uniforms.width + tid.x;
+    device Ray& ray = rays[rayIdx];
+    device Ray& shadowRay = shadowRays[rayIdx];
+    device Intersection & intersection = intersections[rayIdx];
+    
+    // Negative distance is a terminated ray.
+    if (ray.maxDistance < 0.0f || intersection.distance < 0.0f)
+    {
+        ray.maxDistance = -1.0f;
+        shadowRay.maxDistance = -1.0f;
+        return;
+    }
+    
+    float3 color = ray.color;
+    uint materialID = triangleMasks[intersection.primitiveIndex];
+
+    // Regular opaque geometry.
+    if (materialID == MATERIAL_DEFAULT)
+    {
+        // Compute intersection point
+        float3 intersectionPoint = ray.origin + ray.direction * intersection.distance;
+
+        // Interpolate the vertex color at the intersection point
+        float3 vertexColor = interpolateVertexAttribute(vertexColors, intersection);
         
-        float3 color = ray.color;
+        // Interpolate the vertex normal at the intersection point
+        float3 vertexNormal = interpolateVertexAttribute(vertexNormals, intersection);
+        vertexNormal = normalize(vertexNormal);
+
+        unsigned int offset = randomTex.read(tid).x;
         
-        // Intersection distance will be negative if ray missed or was disabled in a previous
-        // iteration.
-        if (ray.maxDistance >= 0.0f && intersection.distance >= 0.0f) {
-            uint mask = triangleMasks[intersection.primitiveIndex];
+        // Look up two random numbers for this thread
+        float2 r = float2(halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 0),
+                          halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 1));
+        
+        LightSample light = sampleAreaLight(uniforms.light, r, intersectionPoint, vertexNormal);
+        
+        // Add the vertex color to the ray color.
+        color *= vertexColor;
+        
+        // Setup Shadow Ray.
+        shadowRay.origin = intersectionPoint + vertexNormal * 1e-3f;
+        shadowRay.direction = light.direction;
+        shadowRay.mask = RAY_MASK_SHADOW;
+        shadowRay.maxDistance = light.distance - 1e-3f;
+        shadowRay.color = light.color * color;
+            
+        // Next we choose a random direction to continue the path of the ray. This will
+        // cause light to bounce between surfaces. Normally we would apply a fair bit of math
+        // to compute the fraction of reflected by the current intersection point to the
+        // previous point from the next point. However, by choosing a random direction with
+        // probability proportional to the cosine (dot product) of the angle between the
+        // sample direction and surface normal, the math entirely cancels out except for
+        // multiplying by the interpolated vertex color. This sampling strategy also reduces
+        // the amount of noise in the output image.
+        r = float2(halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 2),
+                   halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 3));
+        
+        float3 sampleDirection = sampleCosineWeightedHemisphere(r);
+        sampleDirection = alignHemisphereWithNormal(sampleDirection, vertexNormal);
 
-            // The light source is included in the acceleration structure so we can see it in the
-            // final image. However, we will compute and sample the lighting directly, so we mask
-            // the light out for shadow and secondary rays.
-            if (mask == MATERIAL_DEFAULT) {
-                // Compute intersection point
-                float3 intersectionPoint = ray.origin + ray.direction * intersection.distance;
-
-                // Interpolate the vertex normal at the intersection point
-                float3 surfaceNormal = interpolateVertexAttribute(vertexNormals, intersection);
-                surfaceNormal = normalize(surfaceNormal);
-
-                unsigned int offset = randomTex.read(tid).x;
-                
-                // Look up two random numbers for this thread
-                float2 r = float2(halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 0),
-                                  halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 1));
-                
-                float3 lightDirection;
-                float3 lightColor;
-                float lightDistance;
-                
-                // Compute the direction to, color, and distance to a random point on the light
-                // source
-                sampleAreaLight(uniforms.light, r, intersectionPoint, lightDirection,
-                                lightColor, lightDistance);
-                
-                // Scale the light color by the cosine of the angle between the light direction and
-                // surface normal
-                lightColor *= saturate(dot(surfaceNormal, lightDirection));
-
-                // Interpolate the vertex color at the intersection point
-                color *= interpolateVertexAttribute(vertexColors, intersection);
-                
-                // Compute the shadow ray. The shadow ray will check if the sample position on the
-                // light source is actually visible from the intersection point we are shading.
-                // If it is, the lighting contribution we just computed will be added to the
-                // output image.
-                
-                // Add a small offset to the intersection point to avoid intersecting the same
-                // triangle again.
-                shadowRay.origin = intersectionPoint + surfaceNormal * 1e-3f;
-                
-                // Travel towards the light source
-                shadowRay.direction = lightDirection;
-                
-                // Avoid intersecting the light source itself
-                shadowRay.mask = RAY_MASK_SHADOW;
-                
-                // Don't overshoot the light source
-                shadowRay.maxDistance = lightDistance - 1e-3f;
-                
-                // Multiply the color and lighting amount at the intersection point to get the final
-                // color, and pass it along with the shadow ray so that it can be added to the
-                // output image if needed.
-                shadowRay.color = lightColor * color;
-                
-                // Next we choose a random direction to continue the path of the ray. This will
-                // cause light to bounce between surfaces. Normally we would apply a fair bit of math
-                // to compute the fraction of reflected by the current intersection point to the
-                // previous point from the next point. However, by choosing a random direction with
-                // probability proportional to the cosine (dot product) of the angle between the
-                // sample direction and surface normal, the math entirely cancels out except for
-                // multiplying by the interpolated vertex color. This sampling strategy also reduces
-                // the amount of noise in the output image.
-                r = float2(halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 2),
-                           halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 3));
-                
-                float3 sampleDirection = sampleCosineWeightedHemisphere(r);
-                sampleDirection = alignHemisphereWithNormal(sampleDirection, surfaceNormal);
-
-                //ray.maxDistance = -1.0f;
-                //shadowRay.maxDistance = -1.0f;
-                ray.origin = intersectionPoint + surfaceNormal * 1e-3f;
-                ray.direction = sampleDirection;
-                ray.color = color;
-                ray.mask = RAY_MASK_SECONDARY;
-            }
-            else {
-                // In this case, a ray coming from the camera hit the light source directly, so
-                // we'll write the light color into the output image.
-                dstTex.write(float4(uniforms.light.color, 1.0f), tid);
-                
-                // Terminate the ray's path
-                ray.maxDistance = -1.0f;
-                shadowRay.maxDistance = -1.0f;
-            }
-        }
-        else {
-            // The ray missed the scene, so terminate the ray's path
-            ray.maxDistance = -1.0f;
-            shadowRay.maxDistance = -1.0f;
-        }
+        // Setup ray.
+        ray.origin = intersectionPoint + vertexNormal * 1e-3f;
+        ray.direction = sampleDirection;
+        ray.color = color;
+        ray.mask = RAY_MASK_SECONDARY;
+    }
+    else if (materialID == MATERIAL_EMISSIVE)
+    {
+        // In this case, a ray coming from the camera hit the light source directly, so
+        // we'll write the light color into the output image.
+        dstTex.write(float4(uniforms.light.color, 1.0f), tid);
+        
+        // Terminate the ray's path
+        ray.maxDistance = -1.0f;
+        shadowRay.maxDistance = -1.0f;
+    }
+    else
+    {
+        // Material error, output magenta.
+        dstTex.write(float4(1.0, 0.0, 1.0, 1.0f), tid);
     }
 }
 
