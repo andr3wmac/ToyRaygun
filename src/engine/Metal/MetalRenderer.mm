@@ -9,9 +9,10 @@ Implementation for platform independent renderer class
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
 #import "MetalRenderer.h"
-#include "engine/Scene.h"
 #include "engine/Renderer.h"
+#include "engine/Scene.h"
 #include "engine/Shader.h"
+#include "engine/Texture.h"
 
 #include <fstream>
 #include <string>
@@ -311,17 +312,14 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // Halton sequence.
     _randomTexture = [_device newTextureWithDescriptor:renderTargetDescriptor];
     
-    uint32_t *randomValues = (uint32_t *)malloc(sizeof(uint32_t) * size.width * size.height);
-    
-    for (NSUInteger i = 0; i < size.width * size.height; i++)
-        randomValues[i] = rand() % (1024 * 1024);
+    toyraygun::Texture randomTex = toyraygun::Texture::generateRandomTexture(size.width, size.height);
     
     [_randomTexture replaceRegion:MTLRegionMake2D(0, 0, size.width, size.height)
                       mipmapLevel:0
-                        withBytes:randomValues
+                        withBytes:randomTex.getBufferPointer()
                       bytesPerRow:sizeof(uint32_t) * size.width];
     
-    free(randomValues);
+    randomTex.destroy();
     
     _frameIndex = 0;
 }

@@ -16,12 +16,14 @@
 
 namespace toyraygun
 {
-    struct Camera {
+    struct Camera
+    {
         UniformFloat3 position;
         UniformFloat4x4 invViewProjMtx;
     };
 
-    struct AreaLight {
+    struct AreaLight
+    {
         UniformFloat3 position;
         UniformFloat3 forward;
         UniformFloat3 right;
