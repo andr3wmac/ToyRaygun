@@ -45,6 +45,15 @@ std::string Platform::getRuntimeShaderPath()
 #endif
 }
 
+std::string Platform::getRuntimeShaderExt()
+{
+#ifdef PLATFORM_WINDOWS
+    return "hlsli";
+#else
+    return "metal";
+#endif
+}
+
 void Platform::init(int width, int height)
 {
     m_quit = false;

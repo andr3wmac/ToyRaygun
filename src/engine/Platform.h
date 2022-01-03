@@ -38,6 +38,7 @@ namespace toyraygun
         static Shader* createShader();
         static Renderer* createRenderer();
         static std::string getRuntimeShaderPath();
+        static std::string getRuntimeShaderExt();
 
         virtual void init(int width, int height);
         virtual void destroy();

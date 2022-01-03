@@ -104,7 +104,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     NSError* compileError;
     
     toyraygun::Shader copyShader;
-    copyShader.load("Copy.shader");
+    copyShader.load("Copy");
     _copyLibrary = [_device newLibraryWithSource:[NSString stringWithCString:copyShader.getSourceText().c_str()
                                                                     encoding:[NSString defaultCStringEncoding]]
                                          options:compileOptions

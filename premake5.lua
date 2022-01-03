@@ -81,7 +81,7 @@ project "ToyRaygun"
         files {
             path.join(SRC_DIR, "engine/D3D12/**.cpp"),
             path.join(SRC_DIR, "engine/D3D12/**.h"),
-            path.join(SHADERS_DIR, "d3d12/**.shader")
+            path.join(SHADERS_DIR, "d3d12/**.hlsli")
         }
 
         links { 
@@ -105,7 +105,7 @@ project "ToyRaygun"
         files {
             path.join(SRC_DIR, "engine/Metal/**.mm"),
             path.join(SRC_DIR, "engine/Metal/**.h"),
-            path.join(SHADERS_DIR, "metal/**.shader")
+            path.join(SHADERS_DIR, "metal/**.metal")
         }
 
         libdirs { 
