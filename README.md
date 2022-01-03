@@ -15,7 +15,7 @@ A fun project to explore the differences between DirectX 12, Metal, and Vulkan r
 - Direct lighting with shadows
 - Multi-bounce lighting on Metal
 
-# Planned Features
+# To Be Completed
 
 - Vulkan
 - Linux
