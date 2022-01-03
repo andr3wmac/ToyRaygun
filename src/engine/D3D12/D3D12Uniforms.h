@@ -6,7 +6,7 @@
 #ifndef D3D12_UNIFORMS_HEADER_GUARD
 #define D3D12_UNIFORMS_HEADER_GUARD
 
-#include "platform/Platform.h"
+#include "engine/Platform.h"
 
 #include <d3d12.h>
 #include <dxgi1_4.h>

@@ -57,9 +57,7 @@ project "ToyRaygun"
         path.join(SRC_DIR, "*.cpp"), 
         path.join(SRC_DIR, "*.h"),
         path.join(SRC_DIR, "engine/*.cpp"), 
-        path.join(SRC_DIR, "engine/*.h"),
-        path.join(SRC_DIR, "platform/*.cpp"), 
-        path.join(SRC_DIR, "platform/*.h")
+        path.join(SRC_DIR, "engine/*.h")
     }
 
     filter "configurations:Debug*"

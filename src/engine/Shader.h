@@ -6,7 +6,7 @@
 #ifndef SHADER_HEADER_GUARD
 #define SHADER_HEADER_GUARD
 
-#include "platform/Platform.h"
+#include "engine/Platform.h"
 #include <string>
 #include <vector>
 #include <sstream>

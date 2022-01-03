@@ -3,7 +3,7 @@
  * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
  */
 
-#include "platform/Platform.h"
+#include "engine/Platform.h"
 #include "engine/Renderer.h"
 #include "engine/Scene.h"
 using namespace toyraygun;

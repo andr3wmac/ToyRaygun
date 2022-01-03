@@ -6,7 +6,7 @@
 #ifndef RENDERER_HEADER_GUARD
 #define RENDERER_HEADER_GUARD
 
-#include "platform/Platform.h"
+#include "engine/Platform.h"
 #include "engine/Scene.h"
 #include "engine/Shader.h"
 #include "engine/Uniforms.h"

@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "platform/Platform.h"
+#include "engine/Platform.h"
 #include "engine/Renderer.h"
 #include "engine/D3D12/D3D12Shader.h"
 #include "engine/D3D12/DeviceResources.h"
