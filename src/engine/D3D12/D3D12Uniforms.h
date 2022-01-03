@@ -35,7 +35,7 @@ namespace toyraygun
 
     struct UniformFloat4x4
     {
-        DirectX::XMMATRIX data; //row-major
+        DirectX::XMMATRIX data; // Row-major
         
         void get(float* _mtxOut)
         {
@@ -46,7 +46,8 @@ namespace toyraygun
             {
                 for (int j = 0; j < 4; ++j)
                 {
-                    _mtxOut[(i * 4) + j] = mat(i, j);
+                    // Note the transpose.
+                    _mtxOut[(i * 4) + j] = mat(j, i);
                 }
             }
         }
@@ -59,7 +60,8 @@ namespace toyraygun
             {
                 for (int j = 0; j < 4; ++j)
                 {
-                    mat(i, j) =  _mtxIn[(i * 4) + j];
+                    // Note the transpose.
+                    mat(j, i) =  _mtxIn[(i * 4) + j];
                 }
             }
             

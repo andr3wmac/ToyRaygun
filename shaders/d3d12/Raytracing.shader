@@ -10,35 +10,13 @@
 #define MATERIAL_DEFAULT  1
 #define MATERIAL_EMISSIVE 2
 
+#include "shaders/common.h"
+
 struct Vertex
 {
     float3 position;
     float3 normal;
     float3 color;
-};
-
-struct Camera 
-{
-    float3 position;
-    row_major float4x4 invViewProjMtx;
-};
-
-struct AreaLight
-{
-    float3 position;
-    float3 forward;
-    float3 right;
-    float3 up;
-    float3 color;
-};
-
-struct Uniforms
-{
-    unsigned int width;
-    unsigned int height;
-    unsigned int frameIndex;
-    Camera camera;
-    AreaLight light;
 };
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
@@ -86,6 +64,7 @@ typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct RayPayload
 {
     float4 color;
+    uint recursionDepth;
 };
 
 struct ShadowPayload
@@ -122,36 +101,6 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
     world.xyz /= world.w;
     origin = g_sceneCB.camera.position.xyz;
     direction = normalize(world.xyz - origin);
-}
-
-const unsigned int primes[] = {
-    2,   3,  5,  7,
-    11, 13, 17, 19,
-    23, 29, 31, 37,
-    41, 43, 47, 53,
-};
-
-// Returns the i'th element of the Halton sequence using the d'th prime number as a
-// base. The Halton sequence is a "low discrepency" sequence: the values appear
-// random but are more evenly distributed then a purely random sequence. Each random
-// value used to render the image should use a different independent dimension 'd',
-// and each sample (frame) should use a different index 'i'. To decorrelate each
-// pixel, a random offset can be applied to 'i'.
-float halton(unsigned int i, unsigned int d) {
-    unsigned int b = primes[d];
-
-    float f = 1.0f;
-    float invB = 1.0f / b;
-
-    float r = 0;
-
-    while (i > 0) {
-        f = f * invB;
-        r = r + f * (i % b);
-        i = i / b;
-    }
-
-    return r;
 }
 
 // Maps two uniformly random numbers to the surface of a two-dimensional area light
@@ -205,6 +154,50 @@ float3 CalculateDiffuseLighting(float3 hitPosition, float3 lightColor, float3 al
     return albedo * lightColor * fNDotL;
 }
 
+float4 tracePrimaryRay(RayDesc ray, uint currentRayRecursionDepth)
+{
+    if (currentRayRecursionDepth >= 3)
+    {
+        return float4(0, 0, 0, 0);
+    }
+
+    RayPayload payload = { float4(0, 0, 0, 0), currentRayRecursionDepth + 1 };
+
+    TraceRay(Scene,
+        RAY_FLAG_CULL_BACK_FACING_TRIANGLES,    // RayFlags
+        0xFF,                                   // InstanceInclusionMask
+        0,                                      // RayContributionToHitGroupIndex
+        1,                                      // MultiplierForGeometryContributionToHitGroupIndex
+        0,                                      // MissShaderIndex
+        ray,
+        payload);
+
+    return payload.color;
+}
+
+bool traceShadowRay(RayDesc ray, uint currentRayRecursionDepth)
+{
+    if (currentRayRecursionDepth >= 3)
+    {
+        return false;
+    }
+
+    ShadowPayload shadowPayload;
+    shadowPayload.hit = false;
+
+    TraceRay(Scene,
+        0,              // RayFlags
+        0xFF,           // InstanceInclusionMask
+        1,              // RayContributionToHitGroupIndex
+        0,              // MultiplierForGeometryContributionToHitGroupIndex
+        1,              // MissShaderIndex
+        ray,
+        shadowPayload
+    );
+
+    return shadowPayload.hit;
+}
+
 [shader("raygeneration")]
 void raygen()
 {
@@ -220,18 +213,12 @@ void raygen()
     ray.Direction = rayDir;
     ray.TMin = 0.001;
     ray.TMax = 10000.0;
-    RayPayload payload = { float4(0, 0, 0, 0) };
-    TraceRay(Scene, 
-        RAY_FLAG_CULL_BACK_FACING_TRIANGLES,    // RayFlags
-        0xFF,                                   // InstanceInclusionMask
-        0,                                      // RayContributionToHitGroupIndex
-        1,                                      // MultiplierForGeometryContributionToHitGroupIndex
-        0,                                      // MissShaderIndex
-        ray, 
-        payload);
+
+    uint currentRecursionDepth = 0;
+    float4 color = tracePrimaryRay(ray, currentRecursionDepth);
 
     // Write the raytraced color to the output texture.
-    RenderTarget[DispatchRaysIndex().xy] = payload.color;
+    RenderTarget[DispatchRaysIndex().xy] = color;
 }
 
 [shader("closesthit")]
@@ -281,26 +268,25 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         float3 color = CalculateDiffuseLighting(hitPosition, lightColor, triangleColor, triangleNormal);
         payload.color = float4(color, 1.0);
 
-        // Trace Shadow Ray
-        /*RayDesc ray;
-        ray.Origin = hitPosition;
-        ray.Direction = float3(g_sceneCB.light.position - hitPosition);
-        ray.TMin = 0.001;
-        ray.TMax = 10000.0;
-        ShadowPayload shadowPayload;
-        shadowPayload.hit = false;
-        TraceRay(Scene,
-            0,              // RayFlags
-            0xFF,           // InstanceInclusionMask
-            1,              // RayContributionToHitGroupIndex
-            0,              // MultiplierForGeometryContributionToHitGroupIndex
-            1,              // MissShaderIndex
-            ray,
-            shadowPayload
-        );
+        // Trace Secondary Ray
+        RayDesc secondaryRay;
+        secondaryRay.Origin = hitPosition;
+        secondaryRay.Direction = float3(1.0, 0.0, 0.0);
+        secondaryRay.TMin = 0.001;
+        secondaryRay.TMax = 10000.0;
 
-        float factor = shadowPayload.hit ? 0.5 : 1.0;
-        payload.color = float4(color.rgb, 1.0f) * factor;*/
+        float4 secondaryColor = tracePrimaryRay(secondaryRay, payload.recursionDepth);
+
+        // Trace Shadow Ray
+        RayDesc shadowRay;
+        shadowRay.Origin = hitPosition;
+        shadowRay.Direction = float3(g_sceneCB.light.position - hitPosition);
+        shadowRay.TMin = 0.001;
+        shadowRay.TMax = 10000.0;
+        bool shadowRayHit = traceShadowRay(shadowRay, payload.recursionDepth);
+
+        float factor = shadowRayHit ? 0.0 : 1.0;
+        payload.color = (float4(color.rgb, 1.0f) * factor);
     }
 
     // Emissive

@@ -57,7 +57,8 @@ project "ToyRaygun"
         path.join(SRC_DIR, "*.cpp"), 
         path.join(SRC_DIR, "*.h"),
         path.join(SRC_DIR, "engine/*.cpp"), 
-        path.join(SRC_DIR, "engine/*.h")
+        path.join(SRC_DIR, "engine/*.h"),
+        path.join(SHADERS_DIR, "**.h")
     }
 
     filter "configurations:Debug*"
