@@ -2,7 +2,7 @@
 
 # What is it?
 
-A fun project to learn the differences between DirectX 12, Metal, and Vulkan raytracing APIs by abstracting them into a simple toy raytracer.
+A fun project to explore the differences between DirectX 12, Metal, and Vulkan raytracing APIs by abstracting them into a simple toy raytracer.
 
 # Features
 
@@ -10,7 +10,7 @@ A fun project to learn the differences between DirectX 12, Metal, and Vulkan ray
 - Metal
 - Windows & OSX
 - Runtime shader compilation
-- Cornell Box demo scene
+- Cornell Box scene
 - SDL2 window and input
 - Direct lighting with shadows
 - Multi-bounce lighting on Metal
@@ -19,7 +19,6 @@ A fun project to learn the differences between DirectX 12, Metal, and Vulkan ray
 
 - Vulkan
 - Linux
-- Generate shaders for all platforms from single source
 - Multi-bounce lighting on all APIs
 - OBJ and Texture support
 
