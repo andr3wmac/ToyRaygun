@@ -18,7 +18,8 @@ using namespace toyraygun;
 std::vector<std::string> Shader::s_skipShaderIncludes
 {
     "metal_stdlib",
-    "simd/simd.h"
+    "simd/simd.h",
+    "metal_stdlib"
 };
 
 bool Shader::load(std::string path, bool doPreprocess)
@@ -90,10 +91,14 @@ void Shader::preprocess()
         }
     }
 
+    // Copy final shader to source text.
     finalShader.seekg(0);
-
-    m_sourceText.clear();
-    m_sourceText << finalShader.rdbuf();
+    m_sourceText.str(finalShader.str());
+    
+#if _DEBUG
+    std::cout << "Processed Shader:" << std::endl;
+    std::cout << m_sourceText.str().c_str() << std::endl;
+#endif
 }
 
 void Shader::addFunction(std::string functionName, ShaderFunctionType functionType)

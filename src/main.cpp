@@ -59,7 +59,7 @@ int main (int argc, char *args[])
     platform->init(1024, 768);
     
     Shader* rtShader = Platform::createShader();
-    if (rtShader->load("Raytracing.shader", false))
+    if (rtShader->load("Raytracing.shader"))
     {
         rtShader->addFunction("raygen", ShaderFunctionType::RayGen);
         rtShader->addFunction("primaryHit", ShaderFunctionType::ClosestHit);

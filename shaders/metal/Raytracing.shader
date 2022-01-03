@@ -10,102 +10,30 @@ Metal shaders used for ray tracing
 
 using namespace metal;
 
-#define MATERIAL_DEFAULT   1
-#define MATERIAL_EMISSIVE  2
+#include "shaders/common.h"
 
 #define RAY_MASK_PRIMARY   3
 #define RAY_MASK_SHADOW    1
 #define RAY_MASK_SECONDARY 1
 
-struct Camera {
-    float3 position;
-    float4x4 invViewProjMtx;
-};
-
-struct AreaLight {
-    float3 position;
-    float3 forward;
-    float3 right;
-    float3 up;
-    float3 color;
-};
-
-struct Uniforms
+struct Ray
 {
-    unsigned int width;
-    unsigned int height;
-    unsigned int frameIndex;
-    Camera camera;
-    AreaLight light;
-};
-
-// Represents a three dimensional ray which will be intersected with the scene. The ray type
-// is customized using properties of the MPSRayIntersector.
-struct Ray {
-    // Starting point
     packed_float3 origin;
-    
-    // Mask which will be bitwise AND-ed with per-triangle masks to filter out certain
-    // intersections. This is used to make the light source visible to the camera but not
-    // to shadow or secondary rays.
     uint mask;
-    
-    // Direction the ray is traveling
     packed_float3 direction;
-    
-    // Maximum intersection distance to accept. This is used to prevent shadow rays from
-    // overshooting the light source when checking for visibility.
     float maxDistance;
-    
-    // The accumulated color along the ray's path so far
     float3 color;
 };
 
 // Represents an intersection between a ray and the scene, returned by the MPSRayIntersector.
-// The intersection type is customized using properties of the MPSRayIntersector.
-struct Intersection {
-    // The distance from the ray origin to the intersection point. Negative if the ray did not
-    // intersect the scene.
+struct Intersection
+{
     float distance;
-    
-    // The index of the intersected primitive (triangle), if any. Undefined if the ray did not
-    // intersect the scene.
     int primitiveIndex;
     
-    // The barycentric coordinates of the intersection point, if any. Undefined if the ray did
-    // not intersect the scene.
+    // Barycentric coordinates
     float2 coordinates;
 };
-
-constant unsigned int primes[] = {
-    2,   3,  5,  7,
-    11, 13, 17, 19,
-    23, 29, 31, 37,
-    41, 43, 47, 53,
-};
-
-// Returns the i'th element of the Halton sequence using the d'th prime number as a
-// base. The Halton sequence is a "low discrepency" sequence: the values appear
-// random but are more evenly distributed then a purely random sequence. Each random
-// value used to render the image should use a different independent dimension 'd',
-// and each sample (frame) should use a different index 'i'. To decorrelate each
-// pixel, a random offset can be applied to 'i'.
-float halton(unsigned int i, unsigned int d) {
-    unsigned int b = primes[d];
-    
-    float f = 1.0f;
-    float invB = 1.0f / b;
-    
-    float r = 0;
-    
-    while (i > 0) {
-        f = f * invB;
-        r = r + f * (i % b);
-        i = i / b;
-    }
-    
-    return r;
-}
 
 // Generates rays starting from the camera origin and traveling towards the image plane aligned
 // with the camera's coordinate system.

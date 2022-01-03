@@ -39,7 +39,7 @@ namespace toyraygun
         std::string m_sourcePath;
         std::stringstream m_sourceText;
 
-        virtual bool load(std::string path, bool doPreprocess = false);
+        virtual bool load(std::string path, bool doPreprocess = true);
         virtual void preprocess();
         virtual bool compile();
 
