@@ -209,7 +209,7 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         Vertices[indices[1]].normal,
         Vertices[indices[2]].normal
     };
-    float3 triangleNormal = HitAttribute(vertexNormals, attr);
+    float3 vertexNormal = HitAttribute(vertexNormals, attr);
 
     // Retrieve corresponding vertex colors for the triangle vertices.
     float3 vertexColors[3] = {
@@ -217,7 +217,7 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         Vertices[indices[1]].color,
         Vertices[indices[2]].color
     };
-    float3 triangleColor = HitAttribute(vertexColors, attr);
+    float3 vertexColor = HitAttribute(vertexColors, attr);
 
     uint materialID = MaterialIDs[triangleIndex];
 
@@ -227,23 +227,43 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
     // Default
     if (materialID == MATERIAL_DEFAULT)
     {
-        LightSample light;
-        light = sampleAreaLight(g_sceneCB.light, float2(0.5, 0.5), hitPosition, triangleNormal);
+        // Apply a random offset to random number index to decorrelate pixels
+        //uint offset = (uint)RandomTexture.Load(DispatchRaysIndex().xy).x;
+        uint offset = 0;
+        float2 r = float2(halton(offset + g_sceneCB.frameIndex, 0),
+            halton(offset + g_sceneCB.frameIndex, 1));
 
-        float3 color = CalculateDiffuseLighting(hitPosition, light.color, triangleColor, triangleNormal);
+        LightSample light;
+        light = sampleAreaLight(g_sceneCB.light, r, hitPosition, vertexNormal);
+
+        float3 color = CalculateDiffuseLighting(hitPosition, light.color, vertexColor, vertexNormal);
         payload.color = float4(color, 1.0);
+
+        // Next we choose a random direction to continue the path of the ray. This will
+        // cause light to bounce between surfaces. Normally we would apply a fair bit of math
+        // to compute the fraction of reflected by the current intersection point to the
+        // previous point from the next point. However, by choosing a random direction with
+        // probability proportional to the cosine (dot product) of the angle between the
+        // sample direction and surface normal, the math entirely cancels out except for
+        // multiplying by the interpolated vertex color. This sampling strategy also reduces
+        // the amount of noise in the output image.
+        r = float2(halton(offset + g_sceneCB.frameIndex, 2 + payload.recursionDepth * 4 + 2),
+            halton(offset + g_sceneCB.frameIndex, 2 + payload.recursionDepth * 4 + 3));
+
+        float3 sampleDirection = sampleCosineWeightedHemisphere(r);
+        sampleDirection = alignHemisphereWithNormal(sampleDirection, vertexNormal);
 
         // Trace Secondary Ray
         RayDesc secondaryRay;
         secondaryRay.Origin = hitPosition;
-        secondaryRay.Direction = float3(1.0, 0.0, 0.0);
+        secondaryRay.Direction = sampleDirection;
         secondaryRay.TMin = 0.001;
         secondaryRay.TMax = 10000.0;
 
         float4 secondaryColor = tracePrimaryRay(secondaryRay, payload.recursionDepth);
 
         // Trace Shadow Ray
-        RayDesc shadowRay;
+        /*RayDesc shadowRay;
         shadowRay.Origin = hitPosition;
         shadowRay.Direction = float3(g_sceneCB.light.position - hitPosition);
         shadowRay.TMin = 0.001;
@@ -251,13 +271,13 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         bool shadowRayHit = traceShadowRay(shadowRay, payload.recursionDepth);
 
         float factor = shadowRayHit ? 0.0 : 1.0;
-        payload.color = (float4(color.rgb, 1.0f) * factor);
+        payload.color = (float4(color.rgb, 1.0f) * factor);*/
     }
 
     // Emissive
     if (materialID == MATERIAL_EMISSIVE)
     {
-        payload.color = float4(triangleColor, 1.0);
+        payload.color = float4(vertexColor, 1.0);
     }
 }
 
