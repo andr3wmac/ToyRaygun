@@ -1,9 +1,12 @@
 /*
-See LICENSE folder for this sample’s licensing information.
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+ 
+ * This renderer is based on Metal for Accelerating Ray Tracing from:
+   https://developer.apple.com/documentation/metalperformanceshaders/metal_for_accelerating_ray_tracing
+ * By Apple
+ */
 
-Abstract:
-Implementation for platform independent renderer class
-*/
 
 #import <simd/simd.h>
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
