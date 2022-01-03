@@ -13,9 +13,7 @@
 #include "engine/Renderer.h"
 #include "engine/D3D12/D3D12Shader.h"
 #include "engine/D3D12/DeviceResources.h"
-
-#include "engine/D3D12/ShaderCommon.h"
-using namespace shadercommon;
+#include "engine/Uniforms.h"
 
 #include <windows.h>
 #include <windowsx.h>
@@ -62,15 +60,27 @@ public:
     virtual void renderFrame();
 
 private:
+
+    // Index Buffer Type
+    typedef UINT16 Index;
+
+    // Vertex Buffer Type
+    struct Vertex
+    {
+        DirectX::XMFLOAT3 position;
+        DirectX::XMFLOAT3 normal;
+        DirectX::XMFLOAT3 color;
+    };
+
     static const UINT kDefaultSwapChainBuffers = 3;
     std::unique_ptr<DX::DeviceResources> m_deviceResources;
 
     // We'll allocate space for several of these and they will need to be padded for alignment.
-    static_assert(sizeof(SceneConstantBuffer) < D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, "Checking the size here.");
+    static_assert(sizeof(toyraygun::Uniforms) < D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, "Checking the size here.");
 
     union AlignedSceneConstantBuffer
     {
-        SceneConstantBuffer constants;
+        toyraygun::Uniforms constants;
         uint8_t alignmentPadding[D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT];
     };
     AlignedSceneConstantBuffer*  m_mappedConstantData;
@@ -91,8 +101,7 @@ private:
     UINT m_descriptorSize;
     
     // Raytracing scene
-    SceneConstantBuffer m_sceneCB[kDefaultSwapChainBuffers];
-    CubeConstantBuffer m_cubeCB;
+    toyraygun::Uniforms m_sceneCB[kDefaultSwapChainBuffers];
 
     // Geometry
     struct D3DBuffer
@@ -115,8 +124,8 @@ private:
     UINT m_raytracingOutputResourceUAVDescriptorHeapIndex;
 
     // Shader tables
-    static const wchar_t* c_hitGroupName;
-    static const wchar_t* c_shadowHitGroupName;
+    static const wchar_t* kPrimaryHitGroupName;
+    static const wchar_t* kShadowHitGroupName;
     ComPtr<ID3D12Resource> m_missShaderTable;
     ComPtr<ID3D12Resource> m_hitGroupShaderTable;
     ComPtr<ID3D12Resource> m_rayGenShaderTable;

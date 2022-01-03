@@ -10,20 +10,6 @@
 #define MATERIAL_DEFAULT  1
 #define MATERIAL_EMISSIVE 2
 
-struct AreaLight
-{
-    float4 position;
-    float4 forward;
-    float4 right;
-    float4 up;
-    float4 color;
-};
-
-struct CubeConstantBuffer
-{
-    float4 albedo;
-};
-
 struct Vertex
 {
     float3 position;
@@ -31,10 +17,27 @@ struct Vertex
     float3 color;
 };
 
-struct SceneConstantBuffer
+struct Camera 
 {
-    row_major float4x4 projectionToWorld;
-    float4 cameraPosition;
+    float3 position;
+    row_major float4x4 invViewProjMtx;
+};
+
+struct AreaLight
+{
+    float3 position;
+    float3 forward;
+    float3 right;
+    float3 up;
+    float3 color;
+};
+
+struct Uniforms
+{
+    unsigned int width;
+    unsigned int height;
+    unsigned int frameIndex;
+    Camera camera;
     AreaLight light;
 };
 
@@ -44,8 +47,7 @@ ByteAddressBuffer Indices : register(t1, space0);
 StructuredBuffer<Vertex> Vertices : register(t2, space0);
 StructuredBuffer<uint> MaterialIDs : register(t3, space0);
 
-ConstantBuffer<SceneConstantBuffer> g_sceneCB : register(b0);
-ConstantBuffer<CubeConstantBuffer> g_cubeCB : register(b1);
+ConstantBuffer<Uniforms> g_sceneCB : register(b0);
 
 // Load three 16 bit indices from a byte addressed buffer.
 uint3 Load3x16BitIndices(uint offsetBytes)
@@ -115,10 +117,10 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
     screenPos.y = -screenPos.y;
 
     // Unproject the pixel coordinate into a ray.
-    float4 world = mul(float4(screenPos, 0, 1), g_sceneCB.projectionToWorld);
+    float4 world = mul(float4(screenPos, 0, 1), g_sceneCB.camera.invViewProjMtx);
 
     world.xyz /= world.w;
-    origin = g_sceneCB.cameraPosition.xyz;
+    origin = g_sceneCB.camera.position.xyz;
     direction = normalize(world.xyz - origin);
 }
 
@@ -265,6 +267,9 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
 
     uint materialID = MaterialIDs[triangleIndex];
 
+    // Error
+    payload.color = float4(1.0, 0.0, 1.0, 1.0);
+
     // Default
     if (materialID == MATERIAL_DEFAULT)
     {
@@ -277,7 +282,7 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         payload.color = float4(color, 1.0);
 
         // Trace Shadow Ray
-        RayDesc ray;
+        /*RayDesc ray;
         ray.Origin = hitPosition;
         ray.Direction = float3(g_sceneCB.light.position - hitPosition);
         ray.TMin = 0.001;
@@ -294,8 +299,8 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
             shadowPayload
         );
 
-        float factor = shadowPayload.hit ? 0.0 : 1.0;
-        payload.color = float4(color.rgb, 1.0f) * factor;
+        float factor = shadowPayload.hit ? 0.5 : 1.0;
+        payload.color = float4(color.rgb, 1.0f) * factor;*/
     }
 
     // Emissive
