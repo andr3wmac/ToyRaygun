@@ -27,12 +27,9 @@ using namespace simd;
 
 static const NSUInteger maxFramesInFlight = 3;
 static const size_t alignedUniformsSize = (sizeof(toyraygun::Uniforms) + 255) & ~255;
-
 static const size_t rayStride = 48;
 static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitiveIndexCoordinates);
 
-// Our platform independent renderer class.   Implements the MTKViewDelegate protocol which
-//   allows it to accept per-frame update and drawable resize callbacks.
 @interface _MetalRenderer : NSObject
 
 -(nonnull instancetype)initWithDevice:(nonnull id<MTLDevice>)device
@@ -334,29 +331,24 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     _uniformBufferOffset = alignedUniformsSize * _uniformBufferIndex;
 
     toyraygun::Uniforms *uniforms = (toyraygun::Uniforms *)((char *)_uniformBuffer.contents + _uniformBufferOffset);
-
-    uniforms->camera.position = bx::Vec3(0.0f, 1.0f, 3.38f);
-    uniforms->camera.forward = bx::Vec3(0.0f, 0.0f, -1.0f);
-    uniforms->camera.right = bx::Vec3(1.0f, 0.0f, 0.0f);
-    uniforms->camera.up = bx::Vec3(0.0f, 1.0f, 0.0f);
     
-    uniforms->light.position = bx::Vec3(0.0f, 1.98f, 0.0f);
-    uniforms->light.forward = bx::Vec3(0.0f, -1.0f, 0.0f);
-    uniforms->light.right = bx::Vec3(0.25f, 0.0f, 0.0f);
-    uniforms->light.up = bx::Vec3(0.0f, 0.0f, 0.25f);
-    uniforms->light.color = bx::Vec3(4.0f, 4.0f, 4.0f);
+    float viewProjMtx[16];
+    _parent->getViewProjMtx(viewProjMtx);
     
-    float fieldOfView = 45.0f * (M_PI / 180.0f);
-    float aspectRatio = (float)_size.width / (float)_size.height;
-    float imagePlaneHeight = tanf(fieldOfView / 2.0f);
-    float imagePlaneWidth = aspectRatio * imagePlaneHeight;
+    float invViewProjMtx[16];
+    bx::mtxInverse(invViewProjMtx, viewProjMtx);
     
-    uniforms->camera.right = bx::mul(uniforms->camera.right, imagePlaneWidth);
-    uniforms->camera.up = bx::mul(uniforms->camera.up, imagePlaneHeight);
+    uniforms->camera.position.set(bx::Vec3(0.0f, 1.0f, 3.38f));
+    uniforms->camera.invViewProjMtx.set(invViewProjMtx);
+    
+    uniforms->light.position.set(bx::Vec3(0.0f, 1.98f, 0.0f));
+    uniforms->light.forward.set(bx::Vec3(0.0f, -1.0f, 0.0f));
+    uniforms->light.right.set(bx::Vec3(0.25f, 0.0f, 0.0f));
+    uniforms->light.up.set(bx::Vec3(0.0f, 0.0f, 0.25f));
+    uniforms->light.color.set(bx::Vec3(4.0f, 4.0f, 4.0f));
     
     uniforms->width = (unsigned int)_size.width;
     uniforms->height = (unsigned int)_size.height;
-
     uniforms->frameIndex = _frameIndex++;
     
 #if !TARGET_OS_IPHONE
@@ -553,6 +545,8 @@ using namespace toyraygun;
 
 bool MetalRenderer::init(Platform* platform)
 {
+    Renderer::init(platform);
+    
     CAMetalLayer* swapchain = (__bridge CAMetalLayer *)SDL_RenderGetMetalLayer(platform->getRenderer());
     const id<MTLDevice> gpu = swapchain.device;
     

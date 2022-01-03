@@ -18,18 +18,16 @@ using namespace metal;
 #define RAY_MASK_SECONDARY 1
 
 struct Camera {
-    packed_float3 position;
-    packed_float3 right;
-    packed_float3 up;
-    packed_float3 forward;
+    float3 position;
+    float4x4 invViewProjMtx;
 };
 
 struct AreaLight {
-    packed_float3 position;
-    packed_float3 forward;
-    packed_float3 right;
-    packed_float3 up;
-    packed_float3 color;
+    float3 position;
+    float3 forward;
+    float3 right;
+    float3 up;
+    float3 color;
 };
 
 struct Uniforms
@@ -145,15 +143,17 @@ kernel void rayKernel(uint2 tid [[thread_position_in_grid]],
         float2 uv = (float2)pixel / float2(uniforms.width, uniforms.height);
         uv = uv * 2.0f - 1.0f;
         
-        constant Camera & camera = uniforms.camera;
-        
         // Rays start at the camera position
+        constant Camera& camera = uniforms.camera;
         ray.origin = camera.position;
         
-        // Map normalized pixel coordinates into camera's coordinate system
-        ray.direction = normalize(uv.x * camera.right +
-                                  uv.y * camera.up +
-                                  camera.forward);
+        // Compute world space position from inverse projection matrix
+        float4 world = float4(uv.xy, 0.0f, 1.0f) * camera.invViewProjMtx;
+        world.xyz /= world.w;
+        
+        // Use that for ray direction.
+        ray.direction = normalize(world.xyz - camera.position);
+        
         // The camera emits primary rays
         ray.mask = RAY_MASK_PRIMARY;
         

@@ -9,6 +9,7 @@
 #include "platform/Platform.h"
 #include "engine/Scene.h"
 #include "engine/Shader.h"
+#include "engine/Uniforms.h"
 
 #include <bx/math.h>
 
@@ -17,30 +18,6 @@
 
 namespace toyraygun
 {
-    struct Camera {
-        bx::Vec3 position;
-        bx::Vec3 right;
-        bx::Vec3 up;
-        bx::Vec3 forward;
-    };
-
-    struct AreaLight {
-        bx::Vec3 position;
-        bx::Vec3 forward;
-        bx::Vec3 right;
-        bx::Vec3 up;
-        bx::Vec3 color;
-    };
-
-    struct Uniforms
-    {
-        unsigned int width;
-        unsigned int height;
-        unsigned int frameIndex;
-        Camera camera;
-        AreaLight light;
-    };
-
     class Renderer
     {
     protected:
@@ -68,6 +45,8 @@ namespace toyraygun
         virtual void renderFrame();
 
         // Camera
+        void getViewProjMtx(float* mtxOut);
+        bx::Vec3 getCameraPosition();
         void setCameraPosition(bx::Vec3 position);
         void setCameraLookAt(bx::Vec3 position);
         void updateCamera();

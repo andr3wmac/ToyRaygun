@@ -48,6 +48,16 @@ void Renderer::renderFrame()
 
 }
 
+void Renderer::getViewProjMtx(float* mtxOut)
+{
+    memcpy(mtxOut, m_viewProjMtx, sizeof(m_viewProjMtx));
+}
+
+bx::Vec3 Renderer::getCameraPosition()
+{
+    return m_eye;
+}
+
 void Renderer::setCameraPosition(bx::Vec3 position)
 {
     m_eye = position;
