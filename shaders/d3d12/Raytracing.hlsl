@@ -100,46 +100,6 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
     direction = normalize(world.xyz - origin);
 }
 
-// Maps two uniformly random numbers to the surface of a two-dimensional area light
-// source and returns the direction to this point, the amount of light which travels
-// between the intersection point and the sample point on the light source, as well
-// as the distance between these two points.
-inline void sampleAreaLight(AreaLight light,
-    float2 u,
-    float3 position,
-    inout float3 lightDirection,
-    inout float3 lightColor,
-    inout float lightDistance)
-{
-    // Map to -1..1
-    u = u * 2.0f - 1.0f;
-
-    // Transform into light's coordinate system
-    float3 samplePosition = light.position +
-        light.right * u.x +
-        light.up * u.y;
-
-    // Compute vector from sample point on light source to intersection point
-    lightDirection = samplePosition - position;
-
-    lightDistance = length(lightDirection);
-
-    float inverseLightDistance = 1.0f / max(lightDistance, 1e-3f);
-
-    // Normalize the light direction
-    lightDirection *= inverseLightDistance;
-
-    // Start with the light's color
-    lightColor = light.color;
-
-    // Light falls off with the inverse square of the distance to the intersection point
-    lightColor *= (inverseLightDistance * inverseLightDistance);
-
-    // Light also falls off with the cosine of angle between the intersection point and
-    // the light source
-    lightColor *= saturate(dot(-lightDirection, light.forward));
-}
-
 // Diffuse lighting calculation.
 float3 CalculateDiffuseLighting(float3 hitPosition, float3 lightColor, float3 albedo, float3 normal)
 {
@@ -257,12 +217,10 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
     // Default
     if (materialID == MATERIAL_DEFAULT)
     {
-        float3 lightDirection;
-        float3 lightColor;
-        float lightDistance;
-        sampleAreaLight(g_sceneCB.light, float2(0.5, 0.5), hitPosition, lightDirection, lightColor, lightDistance);
+        LightSample light;
+        light = sampleAreaLight(g_sceneCB.light, float2(0.5, 0.5), hitPosition, triangleNormal);
 
-        float3 color = CalculateDiffuseLighting(hitPosition, lightColor, triangleColor, triangleNormal);
+        float3 color = CalculateDiffuseLighting(hitPosition, light.color, triangleColor, triangleNormal);
         payload.color = float4(color, 1.0);
 
         // Trace Secondary Ray

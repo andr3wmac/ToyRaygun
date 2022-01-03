@@ -6,6 +6,8 @@
 #ifndef SHADERS_COMMON_HEADER_GUARD
 #define SHADERS_COMMON_HEADER_GUARD
 
+#define PI 3.1415926535898
+
 #define MATERIAL_DEFAULT   1
 #define MATERIAL_EMISSIVE  2
 
@@ -68,10 +70,10 @@ float halton(unsigned int i, unsigned int d)
 // of the angle between the sample direction and the "up" direction (0, 1, 0)
 inline float3 sampleCosineWeightedHemisphere(float2 u)
 {
-    float phi = 2.0f * M_PI_F * u.x;
+    float phi = 2.0f * PI * u.x;
     
-    float cos_phi;
-    float sin_phi = sincos(phi, cos_phi);
+    float cos_phi = cos(phi);
+    float sin_phi = sin(phi);
     
     float cos_theta = sqrt(u.y);
     float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
