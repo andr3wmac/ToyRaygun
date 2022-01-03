@@ -21,6 +21,7 @@ namespace toyraygun
     class Renderer
     {
     protected:
+        int m_frameIndex;
         Shader* m_rtShader;
 
         // Viewport dimensions.

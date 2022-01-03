@@ -35,6 +35,7 @@ namespace GlobalRootSignatureParams {
         IndexBuffersSlot,
         VertexBuffersSlot,
         MaterialIDBufferSlot,
+        RandomTextureSlot,
         Count 
     };
 }
@@ -118,6 +119,12 @@ private:
     ComPtr<ID3D12Resource> m_bottomLevelAccelerationStructure;
     ComPtr<ID3D12Resource> m_topLevelAccelerationStructure;
 
+    // Raytracing input
+    ComPtr<ID3D12Resource> m_randomTexture;
+    ComPtr<ID3D12Resource> m_randomTextureUpload;
+    D3D12_GPU_DESCRIPTOR_HANDLE m_randomTextureUAVGpuDescriptor;
+    UINT m_randomTextureUAVDescriptorHeapIndex;
+
     // Raytracing output
     ComPtr<ID3D12Resource> m_raytracingOutput;
     D3D12_GPU_DESCRIPTOR_HANDLE m_raytracingOutputResourceUAVGpuDescriptor;
@@ -133,9 +140,10 @@ private:
     // Raytracing pipeline
     void DoRaytracing();
     void createRaytracingPipelineStateObject();
+    void createRandomTexture();
+    void updateUniforms();
 
     // Other
-    void UpdateCameraMatrices();
     void RecreateD3D();
     void CreateConstantBuffers();
     void CreateWindowSizeDependentResources();

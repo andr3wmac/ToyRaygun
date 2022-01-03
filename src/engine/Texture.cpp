@@ -13,11 +13,11 @@ using namespace toyraygun;
 Texture Texture::generateRandomTexture(int width, int height)
 {
     Texture randomTexture;
-    randomTexture.init(width, height, 1);
+    randomTexture.init(width, height, 4);
     
-    uint32_t* randomValues = randomTexture.getBufferPointer();
+    uint8_t* randomValues = randomTexture.getBufferPointer();
     
-    for (int i = 0; i < width * height; i++)
+    for (int i = 0; i < (width * height * 4); i++)
     {
         randomValues[i] = rand() % (1024 * 1024);
     }
@@ -27,7 +27,7 @@ Texture Texture::generateRandomTexture(int width, int height)
 
 void Texture::init(int width, int height, int channels)
 {
-    m_data = (uint32_t *)malloc(sizeof(uint32_t) * width * height * channels);
+    m_data = (uint8_t *)malloc(sizeof(uint8_t) * width * height * channels);
     m_width = width;
     m_height = height;
     m_channels = channels;
@@ -41,9 +41,19 @@ void Texture::destroy()
     }
 }
 
-uint32_t* Texture::getBufferPointer()
+uint8_t* Texture::getBufferPointer()
 {
-    return (uint32_t*)(m_data);
+    return (uint8_t*)(m_data);
+}
+
+size_t Texture::getBufferSize()
+{
+    return sizeof(uint8_t) * m_width * m_height * m_channels;
+}
+
+size_t Texture::getBufferStride()
+{
+    return sizeof(uint8_t) * m_width * m_channels;
 }
 
 int Texture::getWidth()

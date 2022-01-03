@@ -98,8 +98,8 @@ namespace DX
         DXGI_FORMAT                 GetDepthBufferFormat() const { return m_depthBufferFormat; }
         D3D12_VIEWPORT              GetScreenViewport() const { return m_screenViewport; }
         D3D12_RECT                  GetScissorRect() const { return m_scissorRect; }
-        UINT                        GetCurrentFrameIndex() const { return m_backBufferIndex; }
-        UINT                        GetPreviousFrameIndex() const { return m_backBufferIndex == 0 ? m_backBufferCount - 1 : m_backBufferIndex - 1; }
+        UINT                        GetCurrentBackBufferIndex() const { return m_backBufferIndex; }
+        UINT                        GetPreviousBackBufferIndex() const { return m_backBufferIndex == 0 ? m_backBufferCount - 1 : m_backBufferIndex - 1; }
         UINT                        GetBackBufferCount() const { return m_backBufferCount; }
         unsigned int                GetDeviceOptions() const { return m_options; }
         LPCWSTR                     GetAdapterDescription() const { return m_adapterDescription.c_str(); }

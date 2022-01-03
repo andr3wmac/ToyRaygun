@@ -18,9 +18,10 @@ struct Vertex
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
 RWTexture2D<float4> RenderTarget : register(u0);
-ByteAddressBuffer Indices : register(t1, space0);
-StructuredBuffer<Vertex> Vertices : register(t2, space0);
-StructuredBuffer<uint> MaterialIDs : register(t3, space0);
+RWTexture2D<float4> RandomTexture : register(u1);
+ByteAddressBuffer Indices : register(t2, space0);
+StructuredBuffer<Vertex> Vertices : register(t3, space0);
+StructuredBuffer<uint> MaterialIDs : register(t4, space0);
 
 ConstantBuffer<Uniforms> g_sceneCB : register(b0);
 
@@ -36,9 +37,9 @@ uint3 Load3x16BitIndices(uint offsetBytes)
     // based on first index's offsetBytes being aligned at the 4 byte boundary or not:
     //  Aligned:     { 0 1 | 2 - }
     //  Not aligned: { - 0 | 1 2 }
-    const uint dwordAlignedOffset = offsetBytes & ~3;    
+    const uint dwordAlignedOffset = offsetBytes & ~3;
     const uint2 four16BitIndices = Indices.Load2(dwordAlignedOffset);
- 
+
     // Aligned: { 0 1 | 2 - } => retrieve first three 16bit indices
     if (dwordAlignedOffset == offsetBytes)
     {
@@ -86,7 +87,16 @@ float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttrib
 // Generate a ray in world space for a camera pixel corresponding to an index from the dispatched 2D grid.
 inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 direction)
 {
-    float2 xy = index + 0.5f; // center in the middle of the pixel.
+    float2 xy = index;
+
+    // Apply a random offset to random number index to decorrelate pixels
+    uint offset = (uint)RandomTexture.Load(DispatchRaysIndex().xy).x;
+    float2 r = float2(halton(offset + g_sceneCB.frameIndex, 0),
+        halton(offset + g_sceneCB.frameIndex, 1));
+
+    xy += r; // Add a random offset to the pixel coordinates for antialiasing
+    xy += 0.5f; // center in the middle of the pixel.
+
     float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
 
     // Invert Y for DirectX-style coordinates.
@@ -160,7 +170,7 @@ void raygen()
 {
     float3 rayDir;
     float3 origin;
-    
+
     // Generate a ray for a camera pixel corresponding to an index from the dispatched 2D grid.
     GenerateCameraRay(DispatchRaysIndex().xy, origin, rayDir);
 
@@ -194,10 +204,10 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
     const uint3 indices = Load3x16BitIndices(baseIndex);
 
     // Retrieve corresponding vertex normals for the triangle vertices.
-    float3 vertexNormals[3] = { 
-        Vertices[indices[0]].normal, 
-        Vertices[indices[1]].normal, 
-        Vertices[indices[2]].normal 
+    float3 vertexNormals[3] = {
+        Vertices[indices[0]].normal,
+        Vertices[indices[1]].normal,
+        Vertices[indices[2]].normal
     };
     float3 triangleNormal = HitAttribute(vertexNormals, attr);
 
