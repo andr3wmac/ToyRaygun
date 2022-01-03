@@ -81,7 +81,7 @@ project "ToyRaygun"
         files {
             path.join(SRC_DIR, "engine/D3D12/**.cpp"),
             path.join(SRC_DIR, "engine/D3D12/**.h"),
-            path.join(SHADERS_DIR, "d3d12/**.hlsli")
+            path.join(SHADERS_DIR, "d3d12/**.hlsl")
         }
 
         links { 
@@ -100,6 +100,9 @@ project "ToyRaygun"
             "{COPYFILE} \"" .. path.getabsolute(path.join(LIB_DIR, "DirectXShaderCompiler/bin/x64/dxcompiler.dll")) .. "\" \"%{cfg.buildtarget.directory}/dxcompiler.dll\"",
             "{COPYFILE} \"" .. path.getabsolute(path.join(LIB_DIR, "DirectXShaderCompiler/bin/x64/dxil.dll")) .. "\" \"%{cfg.buildtarget.directory}/dxil.dll\"",
         }
+
+    filter { "files:**.hlsl" }
+        flags "ExcludeFromBuild"
 
     filter "system:macosx"
         files {

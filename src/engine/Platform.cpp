@@ -48,7 +48,7 @@ std::string Platform::getRuntimeShaderPath()
 std::string Platform::getRuntimeShaderExt()
 {
 #ifdef PLATFORM_WINDOWS
-    return "hlsli";
+    return "hlsl";
 #else
     return "metal";
 #endif
