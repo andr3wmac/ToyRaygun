@@ -90,11 +90,10 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
     float2 xy = index;
 
     // Apply a random offset to random number index to decorrelate pixels
-    uint offset = (uint)RandomTexture.Load(DispatchRaysIndex().xy).x;
-    float2 r = float2(halton(offset + g_sceneCB.frameIndex, 0),
-        halton(offset + g_sceneCB.frameIndex, 1));
+    uint randSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, g_sceneCB.frameIndex, 16);
+    float2 rndFloat2 = float2(nextRand(randSeed), nextRand(randSeed));
 
-    xy += r; // Add a random offset to the pixel coordinates for antialiasing
+    xy += rndFloat2; // Add a random offset to the pixel coordinates for antialiasing
     xy += 0.5f; // center in the middle of the pixel.
 
     float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
@@ -230,8 +229,8 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         // Apply a random offset to random number index to decorrelate pixels
         //uint offset = (uint)RandomTexture.Load(DispatchRaysIndex().xy).x;
         uint offset = 0;
-        float2 r = float2(halton(offset + g_sceneCB.frameIndex, 0),
-            halton(offset + g_sceneCB.frameIndex, 1));
+        float2 r = float2(halton(offset, 0),
+            halton(offset, 1));
 
         LightSample light;
         light = sampleAreaLight(g_sceneCB.light, r, hitPosition, vertexNormal);
@@ -239,31 +238,24 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         float3 color = CalculateDiffuseLighting(hitPosition, light.color, vertexColor, vertexNormal);
         payload.color = float4(color, 1.0);
 
-        // Next we choose a random direction to continue the path of the ray. This will
-        // cause light to bounce between surfaces. Normally we would apply a fair bit of math
-        // to compute the fraction of reflected by the current intersection point to the
-        // previous point from the next point. However, by choosing a random direction with
-        // probability proportional to the cosine (dot product) of the angle between the
-        // sample direction and surface normal, the math entirely cancels out except for
-        // multiplying by the interpolated vertex color. This sampling strategy also reduces
-        // the amount of noise in the output image.
-        r = float2(halton(offset + g_sceneCB.frameIndex, 2 + payload.recursionDepth * 4 + 2),
-            halton(offset + g_sceneCB.frameIndex, 2 + payload.recursionDepth * 4 + 3));
+        uint randSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, g_sceneCB.frameIndex, 16);
+        float2 rndFloat2 = float2(nextRand(randSeed), nextRand(randSeed));
 
-        float3 sampleDirection = sampleCosineWeightedHemisphere(r);
+        float3 sampleDirection = sampleCosineWeightedHemisphere(rndFloat2);
         sampleDirection = alignHemisphereWithNormal(sampleDirection, vertexNormal);
+        sampleDirection = normalize(sampleDirection);
 
         // Trace Secondary Ray
         RayDesc secondaryRay;
         secondaryRay.Origin = hitPosition;
-        secondaryRay.Direction = sampleDirection;
+        secondaryRay.Direction = normalize(sampleDirection);
         secondaryRay.TMin = 0.001;
         secondaryRay.TMax = 10000.0;
 
         float4 secondaryColor = tracePrimaryRay(secondaryRay, payload.recursionDepth);
 
         // Trace Shadow Ray
-        /*RayDesc shadowRay;
+        RayDesc shadowRay;
         shadowRay.Origin = hitPosition;
         shadowRay.Direction = float3(g_sceneCB.light.position - hitPosition);
         shadowRay.TMin = 0.001;
@@ -271,7 +263,7 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         bool shadowRayHit = traceShadowRay(shadowRay, payload.recursionDepth);
 
         float factor = shadowRayHit ? 0.0 : 1.0;
-        payload.color = (float4(color.rgb, 1.0f) * factor);*/
+        payload.color = (float4(sampleDirection.rgb, 1.0f) * factor);
     }
 
     // Emissive
