@@ -9,6 +9,8 @@
 
 #include "shaders/common.h"
 
+#define MAX_BOUNCES 3
+
 struct Vertex
 {
     float3 position;
@@ -18,11 +20,12 @@ struct Vertex
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
 RWTexture2D<float4> RenderTarget : register(u0);
-ByteAddressBuffer Indices : register(t1, space0);
-StructuredBuffer<Vertex> Vertices : register(t2, space0);
-StructuredBuffer<uint> MaterialIDs : register(t3, space0);
+//RWTexture2D<float4> RandomTexture : register(u1);
+ByteAddressBuffer Indices : register(t2, space0);
+StructuredBuffer<Vertex> Vertices : register(t3, space0);
+StructuredBuffer<uint> MaterialIDs : register(t4, space0);
 
-ConstantBuffer<Uniforms> g_sceneCB : register(b0);
+ConstantBuffer<Uniforms> uniforms : register(b0);
 
 // Load three 16 bit indices from a byte addressed buffer.
 uint3 Load3x16BitIndices(uint offsetBytes)
@@ -36,9 +39,9 @@ uint3 Load3x16BitIndices(uint offsetBytes)
     // based on first index's offsetBytes being aligned at the 4 byte boundary or not:
     //  Aligned:     { 0 1 | 2 - }
     //  Not aligned: { - 0 | 1 2 }
-    const uint dwordAlignedOffset = offsetBytes & ~3;    
+    const uint dwordAlignedOffset = offsetBytes & ~3;
     const uint2 four16BitIndices = Indices.Load2(dwordAlignedOffset);
- 
+
     // Aligned: { 0 1 | 2 - } => retrieve first three 16bit indices
     if (dwordAlignedOffset == offsetBytes)
     {
@@ -86,34 +89,31 @@ float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttrib
 // Generate a ray in world space for a camera pixel corresponding to an index from the dispatched 2D grid.
 inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 direction)
 {
-    float2 xy = index + 0.5f; // center in the middle of the pixel.
+    float2 xy = index;
+
+    // Apply a random offset to random number index to decorrelate pixels
+    uint randSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, uniforms.frameIndex, 16);
+    float2 rndFloat2 = float2(nextRand(randSeed), nextRand(randSeed));
+
+    xy += rndFloat2; // Add a random offset to the pixel coordinates for antialiasing
+    xy += 0.5f; // center in the middle of the pixel.
+
     float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
 
     // Invert Y for DirectX-style coordinates.
     screenPos.y = -screenPos.y;
 
     // Unproject the pixel coordinate into a ray.
-    float4 world = mul(float4(screenPos, 0, 1), g_sceneCB.camera.invViewProjMtx);
+    float4 world = mul(float4(screenPos, 0, 1), uniforms.camera.invViewProjMtx);
 
     world.xyz /= world.w;
-    origin = g_sceneCB.camera.position.xyz;
+    origin = uniforms.camera.position.xyz;
     direction = normalize(world.xyz - origin);
-}
-
-// Diffuse lighting calculation.
-float3 CalculateDiffuseLighting(float3 hitPosition, float3 lightColor, float3 albedo, float3 normal)
-{
-    float3 pixelToLight = normalize(g_sceneCB.light.position.xyz - hitPosition);
-
-    // Diffuse contribution.
-    float fNDotL = max(0.0f, dot(pixelToLight, normal));
-
-    return albedo * lightColor * fNDotL;
 }
 
 float4 tracePrimaryRay(RayDesc ray, uint currentRayRecursionDepth)
 {
-    if (currentRayRecursionDepth >= 3)
+    if (currentRayRecursionDepth >= MAX_BOUNCES)
     {
         return float4(0, 0, 0, 0);
     }
@@ -134,9 +134,9 @@ float4 tracePrimaryRay(RayDesc ray, uint currentRayRecursionDepth)
 
 bool traceShadowRay(RayDesc ray, uint currentRayRecursionDepth)
 {
-    if (currentRayRecursionDepth >= 3)
+    if (currentRayRecursionDepth >= MAX_BOUNCES)
     {
-        return false;
+        return true;
     }
 
     ShadowPayload shadowPayload;
@@ -160,7 +160,7 @@ void raygen()
 {
     float3 rayDir;
     float3 origin;
-    
+
     // Generate a ray for a camera pixel corresponding to an index from the dispatched 2D grid.
     GenerateCameraRay(DispatchRaysIndex().xy, origin, rayDir);
 
@@ -194,12 +194,12 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
     const uint3 indices = Load3x16BitIndices(baseIndex);
 
     // Retrieve corresponding vertex normals for the triangle vertices.
-    float3 vertexNormals[3] = { 
-        Vertices[indices[0]].normal, 
-        Vertices[indices[1]].normal, 
-        Vertices[indices[2]].normal 
+    float3 vertexNormals[3] = {
+        Vertices[indices[0]].normal,
+        Vertices[indices[1]].normal,
+        Vertices[indices[2]].normal
     };
-    float3 triangleNormal = HitAttribute(vertexNormals, attr);
+    float3 vertexNormal = HitAttribute(vertexNormals, attr);
 
     // Retrieve corresponding vertex colors for the triangle vertices.
     float3 vertexColors[3] = {
@@ -207,7 +207,7 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         Vertices[indices[1]].color,
         Vertices[indices[2]].color
     };
-    float3 triangleColor = HitAttribute(vertexColors, attr);
+    float3 vertexColor = HitAttribute(vertexColors, attr);
 
     uint materialID = MaterialIDs[triangleIndex];
 
@@ -217,45 +217,60 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
     // Default
     if (materialID == MATERIAL_DEFAULT)
     {
+        // Initialize a random number generator
+        uint randSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, uniforms.frameIndex, 16);
+
+        // Get random numbers (in polar coordinates), convert to random cartesian uv on the lens
+        float2 rndFloat2 = float2(nextRand(randSeed), nextRand(randSeed));
+        float2 rnd = float2(2.0f * 3.14159265f * rndFloat2.x, rndFloat2.y);
+        float2 rndUV = float2(cos(rnd.x) * rnd.y, sin(rnd.x) * rnd.y);
+
+        // Apply a random offset to random number index to decorrelate pixels
+        uint offset = randSeed;
+        float2 r = float2(halton(offset + uniforms.frameIndex, 0), halton(offset + uniforms.frameIndex, 1));
+
         LightSample light;
-        light = sampleAreaLight(g_sceneCB.light, float2(0.5, 0.5), hitPosition, triangleNormal);
+        light = sampleAreaLight(uniforms.light, r, hitPosition, vertexNormal);
 
-        float3 color = CalculateDiffuseLighting(hitPosition, light.color, triangleColor, triangleNormal);
-        payload.color = float4(color, 1.0);
-
-        // Trace Secondary Ray
-        RayDesc secondaryRay;
-        secondaryRay.Origin = hitPosition;
-        secondaryRay.Direction = float3(1.0, 0.0, 0.0);
-        secondaryRay.TMin = 0.001;
-        secondaryRay.TMax = 10000.0;
-
-        float4 secondaryColor = tracePrimaryRay(secondaryRay, payload.recursionDepth);
+        float3 primaryLightColor = light.color;
 
         // Trace Shadow Ray
         RayDesc shadowRay;
         shadowRay.Origin = hitPosition;
-        shadowRay.Direction = float3(g_sceneCB.light.position - hitPosition);
+        shadowRay.Direction = light.direction;
         shadowRay.TMin = 0.001;
         shadowRay.TMax = 10000.0;
         bool shadowRayHit = traceShadowRay(shadowRay, payload.recursionDepth);
+        float shadowFactor = shadowRayHit ? 0.0 : 1.0;
 
-        float factor = shadowRayHit ? 0.0 : 1.0;
-        payload.color = (float4(color.rgb, 1.0f) * factor);
+        // Trace Secondary Ray
+        float3 sampleDirection = sampleCosineWeightedHemisphere(rndUV);
+        sampleDirection = alignHemisphereWithNormal(sampleDirection, vertexNormal);
+        sampleDirection = normalize(sampleDirection);
+
+        RayDesc secondaryRay;
+        secondaryRay.Origin = hitPosition;
+        secondaryRay.Direction = normalize(sampleDirection);
+        secondaryRay.TMin = 0.001;
+        secondaryRay.TMax = 10000.0;
+
+        float3 secondaryLightColor = tracePrimaryRay(secondaryRay, payload.recursionDepth).rgb;
+
+        // Final Color
+        payload.color = float4((primaryLightColor * vertexColor * shadowFactor) + (secondaryLightColor * vertexColor), 1.0);
     }
 
     // Emissive
     if (materialID == MATERIAL_EMISSIVE)
     {
-        payload.color = float4(triangleColor, 1.0);
+        payload.color = float4(uniforms.light.color, 1.0);
     }
 }
 
 [shader("miss")]
 void primaryMiss(inout RayPayload payload)
 {
-    float4 background = float4(0.0f, 0.0f, 0.0f, 1.0f);
-    payload.color = background;
+    payload.color = float4(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 [shader("closesthit")]

@@ -20,6 +20,8 @@ namespace toyraygun
         Miss,
         ShadowHit,
         ShadowMiss,
+        Accumulate,
+        PostProcessing,
         Count
     };
 
@@ -41,7 +43,7 @@ namespace toyraygun
 
         virtual bool load(std::string path, bool doPreprocess = true);
         virtual void preprocess();
-        virtual bool compile();
+        virtual bool compile(std::string entryPoint = "");
 
         virtual void addFunction(std::string functionName, ShaderFunctionType functionType = ShaderFunctionType::None);
         virtual std::vector<std::string> getFunctionNames();
@@ -51,6 +53,7 @@ namespace toyraygun
         virtual std::string getSourceText();
         virtual void* getBufferPointer();
         virtual size_t getBufferSize();
+        virtual void* getCompiledShader();
     };
 }
 

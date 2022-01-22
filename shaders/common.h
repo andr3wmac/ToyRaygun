@@ -33,6 +33,15 @@ struct Uniforms
     AreaLight light;
 };
 
+float D3DX_FLOAT_to_SRGB(float val)
+{
+    if (val < 0.0031308f)
+        val *= 12.92f;
+    else
+        val = 1.055f * pow(val, 1.0f / 2.4f) - 0.055f;
+    return val;
+}
+
 // Returns the i'th element of the Halton sequence using the d'th prime number as a
 // base. The Halton sequence is a "low discrepency" sequence: the values appear
 // random but are more evenly distributed then a purely random sequence. Each random
@@ -147,6 +156,28 @@ inline LightSample sampleAreaLight(AreaLight light,
     result.color *= saturate(dot(vertexNormal, result.direction));
     
     return result;
+}
+
+// Generates a seed for a random number generator from 2 inputs plus a backoff
+uint initRand(uint val0, uint val1, uint backoff = 16)
+{
+    uint v0 = val0, v1 = val1, s0 = 0;
+
+    [unroll]
+    for (uint n = 0; n < backoff; n++)
+    {
+        s0 += 0x9e3779b9;
+        v0 += ((v1 << 4) + 0xa341316c) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4);
+        v1 += ((v0 << 4) + 0xad90777d) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761e);
+    }
+    return v0;
+}
+
+// Takes our seed, updates it, and returns a pseudorandom float in [0..1]
+float nextRand(inout uint s)
+{
+    s = (1664525u * s + 1013904223u);
+    return float(s & 0x00FFFFFF) / float(0x01000000);
 }
 
 #endif // SHADERS_COMMON_HEADER_GUARD

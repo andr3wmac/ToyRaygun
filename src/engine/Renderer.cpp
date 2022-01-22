@@ -7,6 +7,7 @@
 using namespace toyraygun;
 
 Renderer::Renderer() :
+    m_frameIndex(0),
     m_eye(0.0f, 0.0, 0.0f),
     m_up(0.0f, 1.0, 0.0f),
     m_at(0.0f, 0.0, 0.0f)
@@ -43,9 +44,19 @@ void Renderer::setRaytracingShader(Shader* shader)
 	m_rtShader = shader;
 }
 
+void Renderer::setAccumulateShader(Shader* shader)
+{
+    m_accumulateShader = shader;
+}
+
+void Renderer::setPostProcessingShader(Shader* shader)
+{
+    m_postProcessingShader = shader;
+}
+
 void Renderer::renderFrame()
 {
-
+    m_frameIndex++;
 }
 
 void Renderer::getViewProjMtx(float* mtxOut)

@@ -24,7 +24,10 @@ namespace toyraygun
         
         virtual void init(int width, int height, int channels);
         virtual void destroy();
-        virtual uint32_t* getBufferPointer();
+
+        virtual uint8_t* getBufferPointer();
+        virtual size_t getBufferSize();
+        virtual size_t getBufferStride();
         
         virtual int getWidth();
         virtual int getHeight();
