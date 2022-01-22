@@ -3,8 +3,8 @@
  * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
  */
 
-#ifndef PLATFORM_HEADER_GUARD
-#define PLATFORM_HEADER_GUARD
+#ifndef ENGINE_HEADER_GUARD
+#define ENGINE_HEADER_GUARD
 
 #include <string>
 #include <stdio.h>
@@ -25,16 +25,20 @@ namespace toyraygun
     class Shader;
     class Renderer;
 
-    class Platform
+    class Engine
     {
     protected:
+        static Engine* m_instance;
+        
         int m_width;
         int m_height;
         bool m_quit;
         SDL_Window* m_window;
         SDL_Renderer* m_renderer;
-
+        
     public:
+        static Engine* instance();
+        
         static Shader* createShader();
         static Renderer* createRenderer();
         static std::string getRuntimeShaderPath();
@@ -52,4 +56,4 @@ namespace toyraygun
     };
 }
 
-#endif // PLATFORM_HEADER_GUARD
+#endif // ENGINE_HEADER_GUARD

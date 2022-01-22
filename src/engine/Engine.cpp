@@ -3,7 +3,7 @@
  * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
  */
 
-#include "Platform.h"
+#include "Engine.h"
 using namespace toyraygun;
 
 #ifdef PLATFORM_WINDOWS
@@ -14,7 +14,19 @@ using namespace toyraygun;
 #include "engine/Metal/MetalRenderer.h"
 #endif
 
-Shader* Platform::createShader()
+Engine* Engine::m_instance = nullptr;
+
+Engine* Engine::instance()
+{
+    if (m_instance == nullptr)
+    {
+        m_instance = new Engine();
+    }
+    
+    return m_instance;
+}
+
+Shader* Engine::createShader()
 {
 #ifdef PLATFORM_WINDOWS
     D3D12Shader* newShader = new D3D12Shader();
@@ -25,7 +37,7 @@ Shader* Platform::createShader()
 #endif
 }
 
-Renderer* Platform::createRenderer()
+Renderer* Engine::createRenderer()
 {
 #ifdef PLATFORM_WINDOWS
     D3D12Renderer* newRenderer = new D3D12Renderer();
@@ -36,7 +48,7 @@ Renderer* Platform::createRenderer()
 #endif
 }
 
-std::string Platform::getRuntimeShaderPath()
+std::string Engine::getRuntimeShaderPath()
 {
 #ifdef PLATFORM_WINDOWS
     return "shaders/d3d12/";
@@ -45,7 +57,7 @@ std::string Platform::getRuntimeShaderPath()
 #endif
 }
 
-std::string Platform::getRuntimeShaderExt()
+std::string Engine::getRuntimeShaderExt()
 {
 #ifdef PLATFORM_WINDOWS
     return "hlsl";
@@ -54,7 +66,7 @@ std::string Platform::getRuntimeShaderExt()
 #endif
 }
 
-void Platform::init(int width, int height)
+void Engine::init(int width, int height)
 {
     m_quit = false;
     m_width = width;
@@ -69,29 +81,29 @@ void Platform::init(int width, int height)
     m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_PRESENTVSYNC);
 }
 
-void Platform::destroy()
+void Engine::destroy()
 {
     SDL_DestroyRenderer(m_renderer);
     SDL_DestroyWindow(m_window);
     SDL_Quit();
 }
 
-int Platform::getWidth()
+int Engine::getWidth()
 {
     return m_width;
 }
 
-int Platform::getHeight()
+int Engine::getHeight()
 {
     return m_height;
 }
 
-bool Platform::hasQuit()
+bool Engine::hasQuit()
 {
     return m_quit;
 }
 
-void Platform::pollEvents()
+void Engine::pollEvents()
 {
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0)

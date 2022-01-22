@@ -15,10 +15,12 @@ Renderer::Renderer() :
 
 }
 
-bool Renderer::init(Platform* platform)
+bool Renderer::init()
 {
-    m_width = platform->getWidth();
-    m_height = platform->getHeight();
+    Engine* engine = Engine::instance();
+    
+    m_width = engine->getWidth();
+    m_height = engine->getHeight();
     m_aspectRatio = float(m_width) / float(m_height);
 
 	return false;

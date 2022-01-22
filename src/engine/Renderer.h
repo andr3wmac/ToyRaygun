@@ -6,7 +6,7 @@
 #ifndef RENDERER_HEADER_GUARD
 #define RENDERER_HEADER_GUARD
 
-#include "engine/Platform.h"
+#include "engine/Engine.h"
 #include "engine/Scene.h"
 #include "engine/Shader.h"
 #include "engine/Uniforms.h"
@@ -42,7 +42,7 @@ namespace toyraygun
     public:
         Renderer();
 
-        virtual bool init(Platform* platform);
+        virtual bool init();
         virtual void destroy();
         virtual void loadScene(Scene* scene);
         virtual void renderFrame();

@@ -6,7 +6,7 @@
 #ifndef UNIFORMS_HEADER_GUARD
 #define UNIFORMS_HEADER_GUARD
 
-#include "engine/Platform.h"
+#include "engine/Engine.h"
 
 #ifdef PLATFORM_WINDOWS
 #include "engine/D3D12/D3D12Uniforms.h"

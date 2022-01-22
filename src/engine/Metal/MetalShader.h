@@ -12,8 +12,12 @@ namespace toyraygun
 {
     class MetalShader : public Shader
     {
+    protected:
+        void* m_compiledLibrary;
+        
     public:
         virtual bool compile(std::string entryPoint);
+        virtual void* getCompiledShader();
     };
 }
 

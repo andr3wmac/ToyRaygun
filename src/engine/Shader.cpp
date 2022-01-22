@@ -25,7 +25,7 @@ std::vector<std::string> Shader::s_skipShaderIncludes
 bool Shader::load(std::string path, bool doPreprocess)
 {
     char fullPath[256];
-    snprintf(fullPath, 256, "%s/%s.%s", Platform::getRuntimeShaderPath().c_str(), path.c_str(), Platform::getRuntimeShaderExt().c_str());
+    snprintf(fullPath, 256, "%s/%s.%s", Engine::getRuntimeShaderPath().c_str(), path.c_str(), Engine::getRuntimeShaderExt().c_str());
 
     m_sourcePath = fullPath;
     m_sourceText.clear();

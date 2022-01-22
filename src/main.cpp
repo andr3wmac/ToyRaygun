@@ -3,9 +3,9 @@
  * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
  */
 
-#include "engine/Platform.h"
+#include "engine/Engine.h"
 #include "engine/Renderer.h"
-#include "engine/Scene.h"
+#include "engine/Shader.h"
 using namespace toyraygun;
 
 #include <bx/math.h>
@@ -15,10 +15,10 @@ using namespace toyraygun;
 
 int main (int argc, char *args[])
 {
-    Platform* platform = new Platform();
-    platform->init(1024, 768);
+    Engine* engine = Engine::instance();
+    engine->init(1024, 768);
     
-    Shader* rtShader = Platform::createShader();
+    Shader* rtShader = Engine::createShader();
     if (rtShader->load("Raytracing"))
     {
         rtShader->addFunction("raygen", ShaderFunctionType::RayGen);
@@ -37,7 +37,7 @@ int main (int argc, char *args[])
         // Print error.
     }
 
-    Shader* accumulateShader = Platform::createShader();
+    Shader* accumulateShader = Engine::createShader();
     if (accumulateShader->load("Accumulate"))
     {
         accumulateShader->addFunction("accumulate", ShaderFunctionType::Accumulate);
@@ -52,7 +52,7 @@ int main (int argc, char *args[])
         // Print error.
     }
 
-    Shader* postProcessingShader = Platform::createShader();
+    Shader* postProcessingShader = Engine::createShader();
     if (postProcessingShader->load("PostProcessing"))
     {
         postProcessingShader->addFunction("postprocessing", ShaderFunctionType::PostProcessing);
@@ -67,8 +67,8 @@ int main (int argc, char *args[])
         // Print error.
     }
 
-    Renderer* renderer = Platform::createRenderer();
-    if (!renderer->init(platform))
+    Renderer* renderer = Engine::createRenderer();
+    if (!renderer->init())
     {
         std::cout << "Renderer failed to initialize." << std::endl;
         return -1;
@@ -82,9 +82,9 @@ int main (int argc, char *args[])
     Scene* scene = createCornellBoxScene();
     renderer->loadScene(scene);
     
-    while (!platform->hasQuit())
+    while (!engine->hasQuit())
     {
-        platform->pollEvents();
+        engine->pollEvents();
         renderer->renderFrame();
     }
     

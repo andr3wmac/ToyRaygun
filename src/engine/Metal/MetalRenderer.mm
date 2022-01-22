@@ -104,43 +104,15 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 
 - (void)loadMetal
 {
-    MTLCompileOptions* compileOptions = [MTLCompileOptions new];
-    compileOptions.languageVersion = MTLLanguageVersion1_1;
-    NSError* compileError;
-    
     toyraygun::Shader* rtShader = _parent->getRaytracingShader();
-    _rtLib = [_device newLibraryWithSource:[NSString stringWithCString:rtShader->getSourceText().c_str()
-                                                                encoding:[NSString defaultCStringEncoding]]
-                                     options:compileOptions
-                                       error:&compileError];
-    
-    if (compileError != nil)
-    {
-        NSLog(@" Shader Compile Error => %@ ", [compileError userInfo] );
-    }
+    _rtLib = (id<MTLLibrary>)rtShader->getCompiledShader();
     
     toyraygun::Shader* accumulateShader = _parent->getAccumulateShader();
-    _accumulateLib = [_device newLibraryWithSource:[NSString stringWithCString:accumulateShader->getSourceText().c_str()
-                                                                    encoding:[NSString defaultCStringEncoding]]
-                                         options:compileOptions
-                                                 error:&compileError];
-    
-    if (compileError != nil)
-    {
-        NSLog(@" Shader Compile Error => %@ ", [compileError userInfo] );
-    }
+    _accumulateLib = (id<MTLLibrary>)accumulateShader->getCompiledShader();
     
     toyraygun::Shader* postProcessingShader = _parent->getPostProcessingShader();
-    _postProcessingLib = [_device newLibraryWithSource:[NSString stringWithCString:postProcessingShader->getSourceText().c_str()
-                                                                    encoding:[NSString defaultCStringEncoding]]
-                                         options:compileOptions
-                                           error:&compileError];
+    _postProcessingLib = (id<MTLLibrary>)postProcessingShader->getCompiledShader();
 
-    if (compileError != nil)
-    {
-        NSLog(@" Shader Compile Error => %@ ", [compileError userInfo] );
-    }
-    
     _queue = [_device newCommandQueue];
 }
 
@@ -565,16 +537,18 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 
 using namespace toyraygun;
 
-bool MetalRenderer::init(Platform* platform)
+bool MetalRenderer::init()
 {
-    Renderer::init(platform);
+    Renderer::init();
     
-    CAMetalLayer* swapchain = (__bridge CAMetalLayer *)SDL_RenderGetMetalLayer(platform->getRenderer());
+    Engine* engine = Engine::instance();
+    
+    CAMetalLayer* swapchain = (__bridge CAMetalLayer *)SDL_RenderGetMetalLayer(engine->getRenderer());
     const id<MTLDevice> gpu = swapchain.device;
     
     _MetalRenderer* renderer = [[_MetalRenderer alloc] initWithDevice: gpu
                                 parentRenderer:this];
-    [renderer resize: CGSizeMake(platform->getWidth(), platform->getHeight())];
+    [renderer resize: CGSizeMake(engine->getWidth(), engine->getHeight())];
     
     _swapchain = swapchain;
     _renderer = renderer;

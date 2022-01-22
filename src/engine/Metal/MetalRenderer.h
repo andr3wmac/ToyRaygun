@@ -17,7 +17,7 @@ namespace toyraygun
         void* _renderer;
         
     public:
-        bool init(Platform* platform);
+        bool init();
         void destroy();
         
         void loadScene(Scene* scene);
