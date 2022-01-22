@@ -9,6 +9,7 @@
 using namespace toyraygun;
 
 #include <bx/math.h>
+#include <iostream>
 
 Scene* createCornellBoxScene()
 {
@@ -69,6 +70,7 @@ int main (int argc, char *args[])
 
         if (!rtShader->compile())
         {
+            std::cout << "Failed to compile Raytracing shader." << std::endl;
             return -1;
         }
     }
@@ -83,7 +85,8 @@ int main (int argc, char *args[])
 
         if (!accumulateShader->compile("main"))
         {
-            return -1;
+            std::cout << "Failed to compile Accumulate shader." << std::endl;
+            //return -1;
         }
     }
     else {
@@ -97,7 +100,8 @@ int main (int argc, char *args[])
 
         if (!postProcessingShader->compile("main"))
         {
-            return -1;
+            std::cout << "Failed to compile PostProcessing shader." << std::endl;
+            //return -1;
         }
     }
     else {
@@ -107,6 +111,7 @@ int main (int argc, char *args[])
     Renderer* renderer = Platform::createRenderer();
     if (!renderer->init(platform))
     {
+        std::cout << "Renderer failed to initialize." << std::endl;
         return -1;
     }
     renderer->setRaytracingShader(rtShader);

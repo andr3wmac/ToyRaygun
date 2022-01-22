@@ -44,9 +44,19 @@ void Renderer::setRaytracingShader(Shader* shader)
 	m_rtShader = shader;
 }
 
+Shader* Renderer::getAccumulateShader()
+{
+    return m_accumulateShader;
+}
+
 void Renderer::setAccumulateShader(Shader* shader)
 {
     m_accumulateShader = shader;
+}
+
+Shader* Renderer::getPostProcessingShader()
+{
+    return m_postProcessingShader;
 }
 
 void Renderer::setPostProcessingShader(Shader* shader)

@@ -11,6 +11,8 @@
 
 using namespace metal;
 
+#include "shaders/common.h"
+
 // Screen filling quad in normalized device coordinates
 constant float2 quadVertices[] = {
     float2(-1, -1),
@@ -27,7 +29,7 @@ struct CopyVertexOut {
 };
 
 // Simple vertex shader which passes through NDC quad positions
-vertex CopyVertexOut copyVertex(unsigned short vid [[vertex_id]]) {
+vertex CopyVertexOut vert(unsigned short vid [[vertex_id]]) {
     float2 position = quadVertices[vid];
     
     CopyVertexOut out;
@@ -39,16 +41,17 @@ vertex CopyVertexOut copyVertex(unsigned short vid [[vertex_id]]) {
 }
 
 // Simple fragment shader which copies a texture and applies a simple tonemapping function
-fragment float4 copyFragment(CopyVertexOut in [[stage_in]],
+fragment float4 frag(CopyVertexOut in [[stage_in]],
                              texture2d<float> tex)
 {
     constexpr sampler sam(min_filter::nearest, mag_filter::nearest, mip_filter::none);
-    
     float3 color = tex.sample(sam, in.uv).xyz;
     
-    // Apply a very simple tonemapping function to reduce the dynamic range of the
-    // input image into a range which can be displayed on screen.
-    color = color / (1.0f + color);
+    // Tonemapping.
+    color = ACESFilm(color);
+    
+    // Convert to SRGB.
+    color = float3(D3DX_FLOAT_to_SRGB(color.r), D3DX_FLOAT_to_SRGB(color.g), D3DX_FLOAT_to_SRGB(color.b));
     
     return float4(color, 1.0f);
 }

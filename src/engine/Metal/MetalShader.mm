@@ -10,7 +10,7 @@ using namespace toyraygun;
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
 
-bool MetalShader::compile()
+bool MetalShader::compile(std::string entryPoint)
 {
     return true;
 }

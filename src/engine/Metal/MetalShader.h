@@ -13,7 +13,7 @@ namespace toyraygun
     class MetalShader : public Shader
     {
     public:
-        virtual bool compile();
+        virtual bool compile(std::string entryPoint);
     };
 }
 

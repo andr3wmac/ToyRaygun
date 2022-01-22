@@ -48,8 +48,9 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 {
     id <MTLDevice> _device;
     id <MTLCommandQueue> _queue;
-    id <MTLLibrary> _library;
-    id <MTLLibrary> _copyLibrary;
+    id <MTLLibrary> _rtLib;
+    id <MTLLibrary> _accumulateLib;
+    id <MTLLibrary> _postProcessingLib;
     
     MPSTriangleAccelerationStructure *_accelerationStructure;
     MPSRayIntersector *_intersector;
@@ -107,19 +108,39 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     compileOptions.languageVersion = MTLLanguageVersion1_1;
     NSError* compileError;
     
-    toyraygun::Shader copyShader;
-    copyShader.load("Copy");
-    _copyLibrary = [_device newLibraryWithSource:[NSString stringWithCString:copyShader.getSourceText().c_str()
-                                                                    encoding:[NSString defaultCStringEncoding]]
-                                         options:compileOptions
-                                           error:&compileError];
-    
     toyraygun::Shader* rtShader = _parent->getRaytracingShader();
-    _library = [_device newLibraryWithSource:[NSString stringWithCString:rtShader->getSourceText().c_str()
+    _rtLib = [_device newLibraryWithSource:[NSString stringWithCString:rtShader->getSourceText().c_str()
                                                                 encoding:[NSString defaultCStringEncoding]]
                                      options:compileOptions
                                        error:&compileError];
+    
+    if (compileError != nil)
+    {
+        NSLog(@" Shader Compile Error => %@ ", [compileError userInfo] );
+    }
+    
+    toyraygun::Shader* accumulateShader = _parent->getAccumulateShader();
+    _accumulateLib = [_device newLibraryWithSource:[NSString stringWithCString:accumulateShader->getSourceText().c_str()
+                                                                    encoding:[NSString defaultCStringEncoding]]
+                                         options:compileOptions
+                                                 error:&compileError];
+    
+    if (compileError != nil)
+    {
+        NSLog(@" Shader Compile Error => %@ ", [compileError userInfo] );
+    }
+    
+    toyraygun::Shader* postProcessingShader = _parent->getPostProcessingShader();
+    _postProcessingLib = [_device newLibraryWithSource:[NSString stringWithCString:postProcessingShader->getSourceText().c_str()
+                                                                    encoding:[NSString defaultCStringEncoding]]
+                                         options:compileOptions
+                                           error:&compileError];
 
+    if (compileError != nil)
+    {
+        NSLog(@" Shader Compile Error => %@ ", [compileError userInfo] );
+    }
+    
     _queue = [_device newCommandQueue];
 }
 
@@ -134,7 +155,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     computeDescriptor.threadGroupSizeIsMultipleOfThreadExecutionWidth = YES;
     
     // Generates rays according to view/projection matrices
-    computeDescriptor.computeFunction = [_library newFunctionWithName:@"rayKernel"];
+    computeDescriptor.computeFunction = [_rtLib newFunctionWithName:@"rayKernel"];
     
     _rayPipeline = [_device newComputePipelineStateWithDescriptor:computeDescriptor
                                                           options:0
@@ -145,7 +166,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         NSLog(@"Failed to create pipeline state: %@", error);
         
     // Consumes ray/scene intersection test results to perform shading
-    computeDescriptor.computeFunction = [_library newFunctionWithName:@"shadeKernel"];
+    computeDescriptor.computeFunction = [_rtLib newFunctionWithName:@"shadeKernel"];
     
     _shadePipeline = [_device newComputePipelineStateWithDescriptor:computeDescriptor
                                                           options:0
@@ -156,7 +177,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         NSLog(@"Failed to create pipeline state: %@", error);
     
     // Consumes shadow ray intersection tests to update the output image
-    computeDescriptor.computeFunction = [_library newFunctionWithName:@"shadowKernel"];
+    computeDescriptor.computeFunction = [_rtLib newFunctionWithName:@"shadowKernel"];
     
     _shadowPipeline = [_device newComputePipelineStateWithDescriptor:computeDescriptor
                                                              options:0
@@ -167,7 +188,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         NSLog(@"Failed to create pipeline state: %@", error);
 
     // Averages the current frame's output image with all previous frames
-    computeDescriptor.computeFunction = [_library newFunctionWithName:@"accumulateKernel"];
+    computeDescriptor.computeFunction = [_accumulateLib newFunctionWithName:@"accumulateKernel"];
     
     _accumulatePipeline = [_device newComputePipelineStateWithDescriptor:computeDescriptor
                                                                  options:0
@@ -180,8 +201,8 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // Copies rendered scene into the MTKView
     MTLRenderPipelineDescriptor *renderDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
     renderDescriptor.sampleCount = 1;
-    renderDescriptor.vertexFunction = [_copyLibrary newFunctionWithName:@"copyVertex"];
-    renderDescriptor.fragmentFunction = [_copyLibrary newFunctionWithName:@"copyFragment"];
+    renderDescriptor.vertexFunction = [_postProcessingLib newFunctionWithName:@"vert"];
+    renderDescriptor.fragmentFunction = [_postProcessingLib newFunctionWithName:@"frag"];
     renderDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
 
     _copyPipeline = [_device newRenderPipelineStateWithDescriptor:renderDescriptor error:&error];
@@ -346,7 +367,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     uniforms->light.forward.set(bx::Vec3(0.0f, -1.0f, 0.0f));
     uniforms->light.right.set(bx::Vec3(0.25f, 0.0f, 0.0f));
     uniforms->light.up.set(bx::Vec3(0.0f, 0.0f, 0.25f));
-    uniforms->light.color.set(bx::Vec3(4.0f, 4.0f, 4.0f));
+    uniforms->light.color.set(bx::Vec3(1.0f, 1.0f, 1.0f));
     
     uniforms->width = (unsigned int)_size.width;
     uniforms->height = (unsigned int)_size.height;

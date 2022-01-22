@@ -56,7 +56,9 @@ namespace toyraygun
 
         virtual Shader* getRaytracingShader();
         virtual void setRaytracingShader(Shader* shader);
+        virtual Shader* getAccumulateShader();
         virtual void setAccumulateShader(Shader* shader);
+        virtual Shader* getPostProcessingShader();
         virtual void setPostProcessingShader(Shader* shader);
     };
 }
