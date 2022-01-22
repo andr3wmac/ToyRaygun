@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "engine/Platform.h"
+#include "engine/Engine.h"
 #include "engine/Renderer.h"
 #include "engine/D3D12/D3D12Shader.h"
 #include "engine/D3D12/D3D12Device.h"
@@ -53,7 +53,7 @@ public:
     D3D12Renderer();
 
     // Setup
-    virtual bool init(toyraygun::Platform* platform);
+    virtual bool init();
     virtual void destroy();
     virtual void loadScene(toyraygun::Scene* scene);
 

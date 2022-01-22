@@ -9,6 +9,7 @@
 
 #include "D3D12Renderer.h"
 #include "D3D12Utilities.h"
+#include "engine/Engine.h"
 #include "engine/Texture.h"
 
 #include <bx/math.h>
@@ -25,9 +26,9 @@ D3D12Renderer::D3D12Renderer()
     m_postProcessingOutput.descriptorHeapIndex = UINT_MAX;
 }
 
-bool D3D12Renderer::init(toyraygun::Platform* platform)
+bool D3D12Renderer::init()
 {
-    Renderer::init(platform);
+    Renderer::init();
 
     ReleaseWindowSizeDependentResources();
     ReleaseDeviceDependentResources();
