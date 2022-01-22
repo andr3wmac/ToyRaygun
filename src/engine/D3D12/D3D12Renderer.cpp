@@ -8,12 +8,11 @@
 */
 
 #include "D3D12Renderer.h"
-#include "DirectXRaytracingHelper.h"
+#include "D3D12Utilities.h"
 #include "engine/Texture.h"
 
 #include <bx/math.h>
 
-using namespace DX;
 using namespace DirectX;
 
 const wchar_t* D3D12Renderer::kPrimaryHitGroupName = L"PrimaryHitGroup";
@@ -33,26 +32,26 @@ bool D3D12Renderer::init(toyraygun::Platform* platform)
     ReleaseWindowSizeDependentResources();
     ReleaseDeviceDependentResources();
 
-    m_deviceResources = std::make_unique<DeviceResources>(
+    m_device = std::make_unique<D3D12Device>(
         DXGI_FORMAT_R8G8B8A8_UNORM,
         DXGI_FORMAT_UNKNOWN,
         kDefaultSwapChainBuffers,
         D3D_FEATURE_LEVEL_11_0,
-        DeviceResources::c_RequireTearingSupport,
+        D3D12Device::c_RequireTearingSupport,
         UINT_MAX
         );
 
-    m_deviceResources->SetWindow(GetActiveWindow(), m_width, m_height);
-    m_deviceResources->InitializeDXGIAdapter();
+    m_device->SetWindow(GetActiveWindow(), m_width, m_height);
+    m_device->InitializeDXGIAdapter();
 
-    if (!IsDirectXRaytracingSupported(m_deviceResources->GetAdapter()))
+    if (!IsDirectXRaytracingSupported(m_device->GetAdapter()))
     {
         OutputDebugString("ERROR: DirectX Raytracing is not supported by your OS, GPU and/or driver.");
         return false;
     }
 
-    m_deviceResources->CreateDeviceResources();
-    m_deviceResources->CreateWindowSizeDependentResources();
+    m_device->CreateDeviceResources();
+    m_device->CreateWindowSizeDependentResources();
 
     return true;
 }
@@ -60,7 +59,7 @@ bool D3D12Renderer::init(toyraygun::Platform* platform)
 // Update camera matrices passed into the shader.
 void D3D12Renderer::updateUniforms()
 {
-    auto bufferIndex = m_deviceResources->GetCurrentBackBufferIndex();
+    auto bufferIndex = m_device->GetCurrentBackBufferIndex();
 
     m_sceneCB[bufferIndex].frameIndex = m_frameIndex;
     m_sceneCB[bufferIndex].width = m_width;
@@ -82,7 +81,7 @@ void D3D12Renderer::updateUniforms()
 // Initialize scene rendering parameters.
 void D3D12Renderer::loadScene(toyraygun::Scene* scene)
 {
-    auto bufferIndex = m_deviceResources->GetCurrentBackBufferIndex();
+    auto bufferIndex = m_device->GetCurrentBackBufferIndex();
 
     // Setup uniforms.
     updateUniforms();
@@ -133,8 +132,8 @@ void D3D12Renderer::loadScene(toyraygun::Scene* scene)
 // Create constant buffers.
 void D3D12Renderer::CreateConstantBuffers()
 {
-    auto device = m_deviceResources->GetD3DDevice();
-    auto frameCount = m_deviceResources->GetBackBufferCount();
+    auto device = m_device->GetD3DDevice();
+    auto frameCount = m_device->GetBackBufferCount();
     
     // Create the constant buffer memory and map the CPU and GPU addresses
     const D3D12_HEAP_PROPERTIES uploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
@@ -159,7 +158,7 @@ void D3D12Renderer::CreateConstantBuffers()
 
 void D3D12Renderer::SerializeAndCreateRaytracingRootSignature(D3D12_ROOT_SIGNATURE_DESC& desc, ComPtr<ID3D12RootSignature>* rootSig)
 {
-    auto device = m_deviceResources->GetD3DDevice();
+    auto device = m_device->GetD3DDevice();
     ComPtr<ID3DBlob> blob;
     ComPtr<ID3DBlob> error;
 
@@ -169,7 +168,7 @@ void D3D12Renderer::SerializeAndCreateRaytracingRootSignature(D3D12_ROOT_SIGNATU
 
 void D3D12Renderer::CreateRootSignatures()
 {
-    auto device = m_deviceResources->GetD3DDevice();
+    auto device = m_device->GetD3DDevice();
 
     // Global Root Signature
     // This is a root signature that is shared across all raytracing shaders invoked during a DispatchRays() call.
@@ -202,8 +201,8 @@ void D3D12Renderer::CreateRootSignatures()
 // Create raytracing device and command list.
 void D3D12Renderer::CreateRaytracingInterfaces()
 {
-    auto device = m_deviceResources->GetD3DDevice();
-    auto commandList = m_deviceResources->GetCommandList();
+    auto device = m_device->GetD3DDevice();
+    auto commandList = m_device->GetCommandList();
 
     ThrowIfFailed(device->QueryInterface(IID_PPV_ARGS(&m_dxrDevice)), "Couldn't get DirectX Raytracing interface for the device.\n");
     ThrowIfFailed(commandList->QueryInterface(IID_PPV_ARGS(&m_dxrCommandList)), "Couldn't get DirectX Raytracing interface for the command list.\n");
@@ -230,7 +229,7 @@ void D3D12Renderer::CreateLocalRootSignatureSubobjects(CD3DX12_STATE_OBJECT_DESC
 // Create 2D output texture for raytracing.
 void D3D12Renderer::createTexture(D3DTexture& texture, DXGI_FORMAT format)
 {
-    auto device = m_deviceResources->GetD3DDevice();
+    auto device = m_device->GetD3DDevice();
 
     // Create the output resource. The dimensions and format should match the swap-chain.
     auto uavDesc = CD3DX12_RESOURCE_DESC::Tex2D(format, m_width, m_height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
@@ -250,7 +249,7 @@ void D3D12Renderer::createTexture(D3DTexture& texture, DXGI_FORMAT format)
 
 void D3D12Renderer::CreateDescriptorHeap()
 {
-    auto device = m_deviceResources->GetD3DDevice();
+    auto device = m_device->GetD3DDevice();
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     // Allocate a heap for 4 descriptors:
@@ -274,7 +273,7 @@ void D3D12Renderer::CreateDescriptorHeap()
 // Build geometry used in the sample.
 void D3D12Renderer::BuildGeometry(toyraygun::Scene* scene)
 {
-    auto device = m_deviceResources->GetD3DDevice();
+    auto device = m_device->GetD3DDevice();
 
     std::vector<Index> indices;
     for (int i = 0; i < scene->m_indexBuffer.size(); ++i)
@@ -310,10 +309,10 @@ void D3D12Renderer::BuildGeometry(toyraygun::Scene* scene)
 // Build acceleration structures needed for raytracing.
 void D3D12Renderer::BuildAccelerationStructures()
 {
-    auto device = m_deviceResources->GetD3DDevice();
-    auto commandList = m_deviceResources->GetCommandList();
-    auto commandQueue = m_deviceResources->GetCommandQueue();
-    auto commandAllocator = m_deviceResources->GetCommandAllocator();
+    auto device = m_device->GetD3DDevice();
+    auto commandList = m_device->GetCommandList();
+    auto commandQueue = m_device->GetCommandQueue();
+    auto commandAllocator = m_device->GetCommandAllocator();
 
     // Reset the command list for the acceleration structure construction.
     commandList->Reset(commandAllocator, nullptr);
@@ -410,17 +409,17 @@ void D3D12Renderer::BuildAccelerationStructures()
     BuildAccelerationStructure(m_dxrCommandList.Get());
     
     // Kick off acceleration structure construction.
-    m_deviceResources->ExecuteCommandList();
+    m_device->ExecuteCommandList();
 
     // Wait for GPU to finish as the locally created temporary GPU resources will get released once we go out of scope.
-    m_deviceResources->WaitForGpu();
+    m_device->WaitForGpu();
 }
 
 // Build shader tables.
 // This encapsulates all shader records - shaders and the arguments for their local root signatures.
 void D3D12Renderer::BuildShaderTables()
 {
-    auto device = m_deviceResources->GetD3DDevice();
+    auto device = m_device->GetD3DDevice();
 
     void* rayGenShaderIdentifier;
     void* missShaderIdentifier;
@@ -486,7 +485,7 @@ void D3D12Renderer::createOutputTextures()
 {
     createTexture(m_raytracingOutput, DXGI_FORMAT_R32G32B32A32_FLOAT);
     createTexture(m_accumulateOutput, DXGI_FORMAT_R32G32B32A32_FLOAT);
-    createTexture(m_postProcessingOutput, m_deviceResources->GetBackBufferFormat());
+    createTexture(m_postProcessingOutput, m_device->GetBackBufferFormat());
 }
 
 // Create resources that are dependent on the size of the main window.
@@ -541,19 +540,19 @@ void D3D12Renderer::RecreateD3D()
     // Give GPU a chance to finish its execution in progress.
     try
     {
-        m_deviceResources->WaitForGpu();
+        m_device->WaitForGpu();
     }
     catch (HrException&)
     {
         // Do nothing, currently attached adapter is unresponsive.
     }
-    m_deviceResources->HandleDeviceLost();
+    m_device->HandleDeviceLost();
 }
 
 // Render the scene.
 void D3D12Renderer::renderFrame()
 {
-    if (!m_deviceResources->IsWindowVisible())
+    if (!m_device->IsWindowVisible())
     {
         return;
     }
@@ -561,7 +560,7 @@ void D3D12Renderer::renderFrame()
     // Base class does some house keeping.
     Renderer::renderFrame();
 
-    m_deviceResources->Prepare();
+    m_device->Prepare();
 
     updateUniforms();
 
@@ -571,13 +570,13 @@ void D3D12Renderer::renderFrame()
 
     copyToBackbuffer();
 
-    m_deviceResources->Present(D3D12_RESOURCE_STATE_PRESENT);
+    m_device->Present(D3D12_RESOURCE_STATE_PRESENT);
 }
 
 void D3D12Renderer::destroy()
 {
     // Let GPU finish before releasing D3D resources.
-    m_deviceResources->WaitForGpu();
+    m_device->WaitForGpu();
 
     ReleaseWindowSizeDependentResources();
     ReleaseDeviceDependentResources();
@@ -613,7 +612,7 @@ UINT D3D12Renderer::AllocateDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE* cpuDescripto
 // Create SRV for a buffer.
 UINT D3D12Renderer::CreateBufferSRV(D3DBuffer* buffer, UINT numElements, UINT elementSize)
 {
-    auto device = m_deviceResources->GetD3DDevice();
+    auto device = m_device->GetD3DDevice();
 
     // SRV
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -641,10 +640,10 @@ UINT D3D12Renderer::CreateBufferSRV(D3DBuffer* buffer, UINT numElements, UINT el
 // Create 2d texture with random values for noise
 void D3D12Renderer::createRandomTexture()
 {
-    auto device = m_deviceResources->GetD3DDevice();
-    auto commandList = m_deviceResources->GetCommandList();
-    auto backbufferFormat = m_deviceResources->GetBackBufferFormat();
-    auto commandAllocator = m_deviceResources->GetCommandAllocator();
+    auto device = m_device->GetD3DDevice();
+    auto commandList = m_device->GetCommandList();
+    auto backbufferFormat = m_device->GetBackBufferFormat();
+    auto commandAllocator = m_device->GetCommandAllocator();
 
     // Reset the command list for the acceleration structure construction.
     commandList->Reset(commandAllocator, nullptr);
@@ -672,8 +671,6 @@ void D3D12Renderer::createRandomTexture()
     }
 
     {
-
-
         const UINT subresourceCount = uavDesc.DepthOrArraySize * uavDesc.MipLevels;
         UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_randomTexture.Get(), 0, subresourceCount);
         ThrowIfFailed(device->CreateCommittedResource(
@@ -703,12 +700,11 @@ void D3D12Renderer::createRandomTexture()
     m_randomTextureUAVGpuDescriptor = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_descriptorHeap->GetGPUDescriptorHandleForHeapStart(), m_randomTextureUAVDescriptorHeapIndex, m_descriptorSize);
 
     // Kick off acceleration structure construction.
-    m_deviceResources->ExecuteCommandList();
+    m_device->ExecuteCommandList();
 
     // Wait for GPU to finish as the locally created temporary GPU resources will get released once we go out of scope.
-    m_deviceResources->WaitForGpu();
+    m_device->WaitForGpu();
 }
-
 
 // Create a raytracing pipeline state object (RTPSO).
 // An RTPSO represents a full set of shaders reachable by a DispatchRays() call,
@@ -822,14 +818,10 @@ void D3D12Renderer::createRaytracingPipeline()
 
 void D3D12Renderer::performRaytracing()
 {
-    auto commandList = m_deviceResources->GetCommandList();
-    auto bufferIndex = m_deviceResources->GetCurrentBackBufferIndex();
+    auto commandList = m_device->GetCommandList();
+    auto bufferIndex = m_device->GetCurrentBackBufferIndex();
 
-    auto DispatchRays = [&](auto* commandList, auto* stateObject, auto* dispatchDesc)
-    {
-        
-    };
-
+    // Global root signature
     commandList->SetComputeRootSignature(m_raytracingGlobalRootSignature.Get());
 
     // Copy the updated scene constant buffer to GPU.
@@ -842,34 +834,36 @@ void D3D12Renderer::performRaytracing()
     commandList->SetDescriptorHeaps(1, m_descriptorHeap.GetAddressOf());
 
     // Set index and successive vertex buffer decriptor tables
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::IndexBuffersSlot, m_indexBuffer.gpuDescriptorHandle);
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, m_vertexBuffer.gpuDescriptorHandle);
+    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::IndexBuffersSlot,     m_indexBuffer.gpuDescriptorHandle);
+    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot,    m_vertexBuffer.gpuDescriptorHandle);
     commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::MaterialIDBufferSlot, m_materialIDBuffer.gpuDescriptorHandle);
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, m_raytracingOutput.gpuDescriptor);
+    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot,       m_raytracingOutput.gpuDescriptor);
+
     commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, m_topLevelAccelerationStructure->GetGPUVirtualAddress());
 
     // Since each shader table has only one shader record, the stride is same as the size.
-    dispatchDesc.HitGroupTable.StartAddress = m_hitGroupShaderTable->GetGPUVirtualAddress();
-    dispatchDesc.HitGroupTable.SizeInBytes = m_hitGroupShaderTable->GetDesc().Width;
-    dispatchDesc.HitGroupTable.StrideInBytes = dispatchDesc.HitGroupTable.SizeInBytes / 2;
-    dispatchDesc.MissShaderTable.StartAddress = m_missShaderTable->GetGPUVirtualAddress();
-    dispatchDesc.MissShaderTable.SizeInBytes = m_missShaderTable->GetDesc().Width;
+    dispatchDesc.HitGroupTable.StartAddress    = m_hitGroupShaderTable->GetGPUVirtualAddress();
+    dispatchDesc.HitGroupTable.SizeInBytes     = m_hitGroupShaderTable->GetDesc().Width;
+    dispatchDesc.HitGroupTable.StrideInBytes   = dispatchDesc.HitGroupTable.SizeInBytes / 2;
+
+    dispatchDesc.MissShaderTable.StartAddress  = m_missShaderTable->GetGPUVirtualAddress();
+    dispatchDesc.MissShaderTable.SizeInBytes   = m_missShaderTable->GetDesc().Width;
     dispatchDesc.MissShaderTable.StrideInBytes = dispatchDesc.MissShaderTable.SizeInBytes / 2;
+
     dispatchDesc.RayGenerationShaderRecord.StartAddress = m_rayGenShaderTable->GetGPUVirtualAddress();
-    dispatchDesc.RayGenerationShaderRecord.SizeInBytes = m_rayGenShaderTable->GetDesc().Width;
-    dispatchDesc.Width = m_width;
+    dispatchDesc.RayGenerationShaderRecord.SizeInBytes  = m_rayGenShaderTable->GetDesc().Width;
+
+    dispatchDesc.Width  = m_width;
     dispatchDesc.Height = m_height;
-    dispatchDesc.Depth = 1;
+    dispatchDesc.Depth  = 1;
 
     m_dxrCommandList->SetPipelineState1(m_dxrStateObject.Get());
     m_dxrCommandList->DispatchRays(&dispatchDesc);
-
-    DispatchRays(m_dxrCommandList.Get(), m_dxrStateObject.Get(), &dispatchDesc);
 }
 
 void D3D12Renderer::createAccumulatePipeline()
 {
-    auto device = m_deviceResources->GetD3DDevice();
+    auto device = m_device->GetD3DDevice();
 
     // Accumulate Kernal Signature
     {
@@ -898,9 +892,9 @@ void D3D12Renderer::createAccumulatePipeline()
 // Accumulate output from raytracing.
 void D3D12Renderer::performAccumulate()
 {
-    auto commandList = m_deviceResources->GetCommandList();
-    auto renderTarget = m_deviceResources->GetRenderTarget();
-    auto bufferIndex = m_deviceResources->GetCurrentBackBufferIndex();
+    auto commandList = m_device->GetCommandList();
+    auto renderTarget = m_device->GetRenderTarget();
+    auto bufferIndex = m_device->GetCurrentBackBufferIndex();
 
     commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(m_raytracingOutput.resource.Get()));
     commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(m_accumulateOutput.resource.Get()));
@@ -925,7 +919,7 @@ void D3D12Renderer::performAccumulate()
 
 void D3D12Renderer::createPostProcessingPipeline()
 {
-    auto device = m_deviceResources->GetD3DDevice();
+    auto device = m_device->GetD3DDevice();
 
     // Accumulate Kernal Signature
     {
@@ -954,9 +948,9 @@ void D3D12Renderer::createPostProcessingPipeline()
 // Copy the raytracing output to the backbuffer.
 void D3D12Renderer::performPostProcessing()
 {
-    auto commandList = m_deviceResources->GetCommandList();
-    auto renderTarget = m_deviceResources->GetRenderTarget();
-    auto bufferIndex = m_deviceResources->GetCurrentBackBufferIndex();
+    auto commandList = m_device->GetCommandList();
+    auto renderTarget = m_device->GetRenderTarget();
+    auto bufferIndex = m_device->GetCurrentBackBufferIndex();
 
     commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(m_accumulateOutput.resource.Get()));
     commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(m_postProcessingOutput.resource.Get()));
@@ -982,8 +976,8 @@ void D3D12Renderer::performPostProcessing()
 // Copy the final image to the backbuffer.
 void D3D12Renderer::copyToBackbuffer()
 {
-    auto commandList = m_deviceResources->GetCommandList();
-    auto renderTarget = m_deviceResources->GetRenderTarget();
+    auto commandList = m_device->GetCommandList();
+    auto renderTarget = m_device->GetRenderTarget();
 
     D3D12_RESOURCE_BARRIER preCopyBarriers[2];
     preCopyBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(renderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);

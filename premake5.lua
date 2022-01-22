@@ -75,7 +75,8 @@ project "ToyRaygun"
         includedirs {
             path.join(LIB_DIR, "SDL2-2.0.18/include/"),  
             path.join(LIB_DIR, "bx/include/compat/msvc/"),
-            path.join(LIB_DIR, "DirectXShaderCompiler/inc/")  
+            path.join(LIB_DIR, "DirectXShaderCompiler/inc/"),
+            path.join(LIB_DIR, "DirectX/include/")  
         }
 
         files {

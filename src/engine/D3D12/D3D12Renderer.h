@@ -12,7 +12,7 @@
 #include "engine/Platform.h"
 #include "engine/Renderer.h"
 #include "engine/D3D12/D3D12Shader.h"
-#include "engine/D3D12/DeviceResources.h"
+#include "engine/D3D12/D3D12Device.h"
 #include "engine/Uniforms.h"
 
 #include <windows.h>
@@ -74,7 +74,7 @@ private:
     };
 
     static const UINT kDefaultSwapChainBuffers = 3;
-    std::unique_ptr<DX::DeviceResources> m_deviceResources;
+    std::unique_ptr<D3D12Device> m_device;
 
     // We'll allocate space for several of these and they will need to be padded for alignment.
     static_assert(sizeof(toyraygun::Uniforms) < D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, "Checking the size here.");

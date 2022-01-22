@@ -1,18 +1,15 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
+/*
+ * Toy Raygun
+ * MIT License: https://github.com/andr3wmac/ToyRaygun/LICENSE
+ *
+ * This class is based on DeviceResources.h from :
+    https://github.com/microsoft/DirectX-Graphics-Samples/
+ * By Microsoft
+ */
 
-#include "DeviceResources.h"
+#include "D3D12Device.h"
 #include <algorithm>
 
-using namespace DX;
 using namespace std;
 
 using Microsoft::WRL::ComPtr;
@@ -32,7 +29,7 @@ namespace
 };
 
 // Constructor for DeviceResources.
-DeviceResources::DeviceResources(DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthBufferFormat, UINT backBufferCount, D3D_FEATURE_LEVEL minFeatureLevel, UINT flags, UINT adapterIDoverride) :
+D3D12Device::D3D12Device(DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthBufferFormat, UINT backBufferCount, D3D_FEATURE_LEVEL minFeatureLevel, UINT flags, UINT adapterIDoverride) :
     m_backBufferIndex(0),
     m_fenceValues{},
     m_rtvDescriptorSize(0),
@@ -67,14 +64,14 @@ DeviceResources::DeviceResources(DXGI_FORMAT backBufferFormat, DXGI_FORMAT depth
 }
 
 // Destructor for DeviceResources.
-DeviceResources::~DeviceResources()
+D3D12Device::~D3D12Device()
 {
     // Ensure that the GPU is no longer referencing resources that are about to be destroyed.
     WaitForGpu();
 }
 
 // Configures DXGI Factory and retrieve an adapter.
-void DeviceResources::InitializeDXGIAdapter()
+void D3D12Device::InitializeDXGIAdapter()
 {
     bool debugDXGI = false;
 
@@ -137,7 +134,7 @@ void DeviceResources::InitializeDXGIAdapter()
 }
 
 // Configures the Direct3D device, and stores handles to it and the device context.
-void DeviceResources::CreateDeviceResources()
+void D3D12Device::CreateDeviceResources()
 {
     // Create the DX12 API device object.
     ThrowIfFailed(D3D12CreateDevice(m_adapter.Get(), m_d3dMinFeatureLevel, IID_PPV_ARGS(&m_d3dDevice)));
@@ -234,7 +231,7 @@ void DeviceResources::CreateDeviceResources()
 }
 
 // These resources need to be recreated every time the window size is changed.
-void DeviceResources::CreateWindowSizeDependentResources()
+void D3D12Device::CreateWindowSizeDependentResources()
 {
     if (!m_window)
     {
@@ -405,7 +402,7 @@ void DeviceResources::CreateWindowSizeDependentResources()
 }
 
 // This method is called when the Win32 window is created (or re-created).
-void DeviceResources::SetWindow(HWND window, int width, int height)
+void D3D12Device::SetWindow(HWND window, int width, int height)
 {
     m_window = window;
 
@@ -416,7 +413,7 @@ void DeviceResources::SetWindow(HWND window, int width, int height)
 
 // This method is called when the Win32 window changes size.
 // It returns true if window size change was applied.
-bool DeviceResources::WindowSizeChanged(int width, int height, bool minimized)
+bool D3D12Device::WindowSizeChanged(int width, int height, bool minimized)
 {
     m_isWindowVisible = !minimized;
 
@@ -443,7 +440,7 @@ bool DeviceResources::WindowSizeChanged(int width, int height, bool minimized)
 }
 
 // Recreate all device resources and set them back to the current state.
-void DeviceResources::HandleDeviceLost()
+void D3D12Device::HandleDeviceLost()
 {
     if (m_deviceNotify)
     {
@@ -487,7 +484,7 @@ void DeviceResources::HandleDeviceLost()
 }
 
 // Prepare the command list and render target for rendering.
-void DeviceResources::Prepare(D3D12_RESOURCE_STATES beforeState)
+void D3D12Device::Prepare(D3D12_RESOURCE_STATES beforeState)
 {
     // Reset command list and allocator.
     ThrowIfFailed(m_commandAllocators[m_backBufferIndex]->Reset());
@@ -502,7 +499,7 @@ void DeviceResources::Prepare(D3D12_RESOURCE_STATES beforeState)
 }
 
 // Present the contents of the swap chain to the screen.
-void DeviceResources::Present(D3D12_RESOURCE_STATES beforeState)
+void D3D12Device::Present(D3D12_RESOURCE_STATES beforeState)
 {
     if (beforeState != D3D12_RESOURCE_STATE_PRESENT)
     {
@@ -547,7 +544,7 @@ void DeviceResources::Present(D3D12_RESOURCE_STATES beforeState)
 }
 
 // Send the command list off to the GPU for processing.
-void DeviceResources::ExecuteCommandList()
+void D3D12Device::ExecuteCommandList()
 {
     ThrowIfFailed(m_commandList->Close());
     ID3D12CommandList *commandLists[] = { m_commandList.Get() }; 
@@ -555,7 +552,7 @@ void DeviceResources::ExecuteCommandList()
 }
 
 // Wait for pending GPU work to complete.
-void DeviceResources::WaitForGpu() noexcept
+void D3D12Device::WaitForGpu() noexcept
 {
     if (m_commandQueue && m_fence && m_fenceEvent.IsValid())
     {
@@ -576,7 +573,7 @@ void DeviceResources::WaitForGpu() noexcept
 }
 
 // Prepare to render the next frame.
-void DeviceResources::MoveToNextFrame()
+void D3D12Device::MoveToNextFrame()
 {
     // Schedule a Signal command in the queue.
     const UINT64 currentFenceValue = m_fenceValues[m_backBufferIndex];
@@ -598,7 +595,7 @@ void DeviceResources::MoveToNextFrame()
 
 // This method acquires the first high-performance hardware adapter that supports Direct3D 12.
 // If no such adapter can be found, try WARP. Otherwise throw an exception.
-void DeviceResources::InitializeAdapter(IDXGIAdapter1** ppAdapter)
+void D3D12Device::InitializeAdapter(IDXGIAdapter1** ppAdapter)
 {
     *ppAdapter = nullptr;
 
