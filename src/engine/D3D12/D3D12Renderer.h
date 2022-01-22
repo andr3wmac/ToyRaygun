@@ -141,7 +141,7 @@ private:
     ComPtr<ID3D12Resource> m_hitGroupShaderTable;
     ComPtr<ID3D12Resource> m_rayGenShaderTable;
 
-    // Accumulate Kernel
+    // Accumulate
     ComPtr<ID3D12RootSignature> m_accumulateRootSignature;
     ComPtr<ID3D12PipelineState> m_accumlateStateObject;
     D3DTexture m_accumulateOutput;
@@ -152,19 +152,19 @@ private:
     D3DTexture m_postProcessingOutput;
 
     // Raytracing pipeline
-    void DoRaytracing();
-    void createRaytracingPipelineStateObject();
-    void createRandomTexture();
-    void updateUniforms();
+    void createRaytracingPipeline();
+    void performRaytracing();
 
-    void createAccumulateKernel();
-    void accumulateRaytracingOutput();
+    void createAccumulatePipeline();
+    void performAccumulate();
 
-    void createPostProcessingKernel();
-    void postProcess();
+    void createPostProcessingPipeline();
+    void performPostProcessing();
 
     void copyToBackbuffer();
 
+    void createRandomTexture();
+    void updateUniforms();
     void createOutputTextures();
     void createTexture(D3DTexture& texture, DXGI_FORMAT format);
 

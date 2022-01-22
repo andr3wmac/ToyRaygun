@@ -102,7 +102,7 @@ void D3D12Renderer::loadScene(toyraygun::Scene* scene)
     CreateRootSignatures();
 
     // Create a raytracing pipeline state object which defines the binding of shaders, state and resources to be used during raytracing.
-    createRaytracingPipelineStateObject();
+    createRaytracingPipeline();
 
     // Create a heap for descriptors.
     CreateDescriptorHeap();
@@ -125,9 +125,9 @@ void D3D12Renderer::loadScene(toyraygun::Scene* scene)
     // Create an output 2D texture to store the raytracing result to.
     CreateWindowSizeDependentResources();
 
-    // Create Accumulate Kernel
-    createAccumulateKernel();
-    createPostProcessingKernel();
+    // Create Pipelines
+    createAccumulatePipeline();
+    createPostProcessingPipeline();
 }
 
 // Create constant buffers.
@@ -225,116 +225,6 @@ void D3D12Renderer::CreateLocalRootSignatureSubobjects(CD3DX12_STATE_OBJECT_DESC
         rootSignatureAssociation->AddExport(kPrimaryHitGroupName);
         rootSignatureAssociation->AddExport(kShadowHitGroupName);
     }
-}
-
-// Create a raytracing pipeline state object (RTPSO).
-// An RTPSO represents a full set of shaders reachable by a DispatchRays() call,
-// with all configuration options resolved, such as local signatures and other state.
-void D3D12Renderer::createRaytracingPipelineStateObject()
-{
-    /* Example of working RTPSO:
-    --------------------------------------------------------------------
-    | D3D12 State Object 0x000000ADFDCFE7C0: Raytracing Pipeline
-    | [0]: DXIL Library 0x0000023088A1E8E0, 11368 bytes
-    |  [0]: raygen
-    |  [1]: primaryHit
-    |  [2]: primaryMiss
-    |  [3]: shadowHit
-    |  [4]: shadowMiss
-    |--------------------------------------------------------------------
-    | [1]: Hit Group (PrimaryHitGroup)
-    |  [0]: Any Hit Import: [none]
-    |  [1]: Closest Hit Import: primaryHit
-    |  [2]: Intersection Import: [none]
-    |--------------------------------------------------------------------
-    | [2]: Hit Group (ShadowHitGroup)
-    |  [0]: Any Hit Import: [none]
-    |  [1]: Closest Hit Import: shadowHit
-    |  [2]: Intersection Import: [none]
-    |--------------------------------------------------------------------
-    | [3]: Raytracing Shader Config
-    |  [0]: Max Payload Size: 16 bytes
-    |  [1]: Max Attribute Size: 8 bytes
-    |--------------------------------------------------------------------
-    | [4]: Local Root Signature 0x0000023089125580
-    |--------------------------------------------------------------------
-    | [5]: Subobject to Exports Association (Subobject [4])
-    |  [0]: PrimaryHitGroup
-    |  [1]: ShadowHitGroup
-    |--------------------------------------------------------------------
-    | [6]: Global Root Signature 0x00000230891260C0
-    |--------------------------------------------------------------------
-    | [7]: Raytracing Pipeline Config
-    |  [0]: Max Recursion Depth: 3
-    |--------------------------------------------------------------------
-    */
-
-    CD3DX12_STATE_OBJECT_DESC raytracingPipeline{ D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
-
-    // [0] : DXIL Library
-    // Load precompiled shader that was set for the renderer.
-    auto lib = raytracingPipeline.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
-    D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE(m_rtShader->getBufferPointer(), m_rtShader->getBufferSize());
-    lib->SetDXILLibrary(&libdxil);
-
-    // Export each specified function to use in the pipeline.
-    {
-        std::vector<std::string> functionNames = m_rtShader->getFunctionNames();
-        for (int i = 0; i < functionNames.size(); ++i)
-        {
-            std::wstring funcNameW = std::wstring(functionNames[i].begin(), functionNames[i].end());
-            lib->DefineExport(funcNameW.c_str());
-        }
-    }
-    
-    // [1] : Hit Group
-    // A hit group specifies closest hit, any hit and intersection shaders to be executed when a ray intersects the geometry's triangle/AABB.
-    // In this sample, we only use triangle geometry with a closest hit shader, so others are not set.
-    auto hitGroup = raytracingPipeline.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
-    hitGroup->SetClosestHitShaderImport(m_rtShader->getFunctionW(toyraygun::ShaderFunctionType::ClosestHit).c_str());
-    hitGroup->SetHitGroupExport(kPrimaryHitGroupName);
-    hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
-
-    // [2] : Shadow Hit Group
-    // A hit group specifies closest hit, any hit and intersection shaders to be executed when a ray intersects the geometry's triangle/AABB.
-    // In this sample, we only use triangle geometry with a closest hit shader, so others are not set.
-    auto shadowHitGroup = raytracingPipeline.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
-    shadowHitGroup->SetClosestHitShaderImport(m_rtShader->getFunctionW(toyraygun::ShaderFunctionType::ShadowHit).c_str());
-    shadowHitGroup->SetHitGroupExport(kShadowHitGroupName);
-    shadowHitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
-    
-    // [3]: Raytracing Shader Config
-    // Defines the maximum sizes in bytes for the ray payload and attribute structure.
-    auto shaderConfig = raytracingPipeline.CreateSubobject<CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
-    UINT payloadSize = sizeof(XMFLOAT4) + sizeof(UINT);    // float4 pixelColor
-    UINT attributeSize = sizeof(XMFLOAT2);  // float2 barycentrics
-    shaderConfig->Config(payloadSize, attributeSize);
-
-    // [4]: Local Root Signature
-    // [5]: Subobject to Exports Association
-    // This is a root signature that enables a shader to have unique arguments that come from shader tables.
-    CreateLocalRootSignatureSubobjects(&raytracingPipeline);
-
-    // [6]: Global Root Signature
-    // This is a root signature that is shared across all raytracing shaders invoked during a DispatchRays() call.
-    auto globalRootSignature = raytracingPipeline.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
-    globalRootSignature->SetRootSignature(m_raytracingGlobalRootSignature.Get());
-
-    // [7]: Raytracing Pipeline Config
-    // Defines the maximum TraceRay() recursion depth.
-    auto pipelineConfig = raytracingPipeline.CreateSubobject<CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
-
-    // PERFORMANCE TIP: Set max recursion depth as low as needed 
-    // as drivers may apply optimization strategies for low recursion depths.
-    UINT maxRecursionDepth = 3; // ~ primary rays only. 
-    pipelineConfig->Config(maxRecursionDepth);
-
-#if _DEBUG
-    PrintStateObjectDesc(raytracingPipeline);
-#endif
-
-    // Create the state object.
-    ThrowIfFailed(m_dxrDevice->CreateStateObject(raytracingPipeline, IID_PPV_ARGS(&m_dxrStateObject)), "Couldn't create DirectX Raytracing state object.\n");
 }
 
 // Create 2D output texture for raytracing.
@@ -586,53 +476,6 @@ void D3D12Renderer::BuildShaderTables()
     }
 }
 
-void D3D12Renderer::DoRaytracing()
-{
-    auto commandList = m_deviceResources->GetCommandList();
-    auto bufferIndex = m_deviceResources->GetCurrentBackBufferIndex();
-    
-    auto DispatchRays = [&](auto* commandList, auto* stateObject, auto* dispatchDesc)
-    {
-        // Since each shader table has only one shader record, the stride is same as the size.
-        dispatchDesc->HitGroupTable.StartAddress = m_hitGroupShaderTable->GetGPUVirtualAddress();
-        dispatchDesc->HitGroupTable.SizeInBytes = m_hitGroupShaderTable->GetDesc().Width;
-        dispatchDesc->HitGroupTable.StrideInBytes = dispatchDesc->HitGroupTable.SizeInBytes / 2;
-        dispatchDesc->MissShaderTable.StartAddress = m_missShaderTable->GetGPUVirtualAddress();
-        dispatchDesc->MissShaderTable.SizeInBytes = m_missShaderTable->GetDesc().Width;
-        dispatchDesc->MissShaderTable.StrideInBytes = dispatchDesc->MissShaderTable.SizeInBytes / 2;
-        dispatchDesc->RayGenerationShaderRecord.StartAddress = m_rayGenShaderTable->GetGPUVirtualAddress();
-        dispatchDesc->RayGenerationShaderRecord.SizeInBytes = m_rayGenShaderTable->GetDesc().Width;
-        dispatchDesc->Width = m_width;
-        dispatchDesc->Height = m_height;
-        dispatchDesc->Depth = 1;
-        commandList->SetPipelineState1(stateObject);
-        commandList->DispatchRays(dispatchDesc);
-    };
-
-    auto SetCommonPipelineState = [&](auto* descriptorSetCommandList)
-    {
-        descriptorSetCommandList->SetDescriptorHeaps(1, m_descriptorHeap.GetAddressOf());
-        // Set index and successive vertex buffer decriptor tables
-        commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::IndexBuffersSlot, m_indexBuffer.gpuDescriptorHandle);
-        commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, m_vertexBuffer.gpuDescriptorHandle);
-        commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::MaterialIDBufferSlot, m_materialIDBuffer.gpuDescriptorHandle);
-        commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, m_raytracingOutput.gpuDescriptor);
-    };
-
-    commandList->SetComputeRootSignature(m_raytracingGlobalRootSignature.Get());
-
-    // Copy the updated scene constant buffer to GPU.
-    memcpy(&m_mappedConstantData[bufferIndex].constants, &m_sceneCB[bufferIndex], sizeof(m_sceneCB[bufferIndex]));
-    auto cbGpuAddress = m_perFrameConstants->GetGPUVirtualAddress() + bufferIndex * sizeof(m_mappedConstantData[0]);
-    commandList->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantSlot, cbGpuAddress);
-   
-    // Bind the heaps, acceleration structure and dispatch rays.
-    D3D12_DISPATCH_RAYS_DESC dispatchDesc = {};
-    SetCommonPipelineState(commandList);
-    commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, m_topLevelAccelerationStructure->GetGPUVirtualAddress());
-    DispatchRays(m_dxrCommandList.Get(), m_dxrStateObject.Get(), &dispatchDesc);
-}
-
 // Update the application state with the new resolution.
 void D3D12Renderer::UpdateForSizeChange(UINT width, UINT height)
 {
@@ -721,9 +564,10 @@ void D3D12Renderer::renderFrame()
     m_deviceResources->Prepare();
 
     updateUniforms();
-    DoRaytracing();
-    accumulateRaytracingOutput();
-    postProcess();
+
+    performRaytracing();
+    performAccumulate();
+    performPostProcessing();
 
     copyToBackbuffer();
 
@@ -865,7 +709,165 @@ void D3D12Renderer::createRandomTexture()
     m_deviceResources->WaitForGpu();
 }
 
-void D3D12Renderer::createAccumulateKernel()
+
+// Create a raytracing pipeline state object (RTPSO).
+// An RTPSO represents a full set of shaders reachable by a DispatchRays() call,
+// with all configuration options resolved, such as local signatures and other state.
+void D3D12Renderer::createRaytracingPipeline()
+{
+    /* Example of working RTPSO:
+    --------------------------------------------------------------------
+    | D3D12 State Object 0x000000ADFDCFE7C0: Raytracing Pipeline
+    | [0]: DXIL Library 0x0000023088A1E8E0, 11368 bytes
+    |  [0]: raygen
+    |  [1]: primaryHit
+    |  [2]: primaryMiss
+    |  [3]: shadowHit
+    |  [4]: shadowMiss
+    |--------------------------------------------------------------------
+    | [1]: Hit Group (PrimaryHitGroup)
+    |  [0]: Any Hit Import: [none]
+    |  [1]: Closest Hit Import: primaryHit
+    |  [2]: Intersection Import: [none]
+    |--------------------------------------------------------------------
+    | [2]: Hit Group (ShadowHitGroup)
+    |  [0]: Any Hit Import: [none]
+    |  [1]: Closest Hit Import: shadowHit
+    |  [2]: Intersection Import: [none]
+    |--------------------------------------------------------------------
+    | [3]: Raytracing Shader Config
+    |  [0]: Max Payload Size: 16 bytes
+    |  [1]: Max Attribute Size: 8 bytes
+    |--------------------------------------------------------------------
+    | [4]: Local Root Signature 0x0000023089125580
+    |--------------------------------------------------------------------
+    | [5]: Subobject to Exports Association (Subobject [4])
+    |  [0]: PrimaryHitGroup
+    |  [1]: ShadowHitGroup
+    |--------------------------------------------------------------------
+    | [6]: Global Root Signature 0x00000230891260C0
+    |--------------------------------------------------------------------
+    | [7]: Raytracing Pipeline Config
+    |  [0]: Max Recursion Depth: 3
+    |--------------------------------------------------------------------
+    */
+
+    CD3DX12_STATE_OBJECT_DESC raytracingPipeline{ D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
+
+    // [0] : DXIL Library
+    // Load precompiled shader that was set for the renderer.
+    auto lib = raytracingPipeline.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
+    D3D12_SHADER_BYTECODE libdxil = CD3DX12_SHADER_BYTECODE(m_rtShader->getBufferPointer(), m_rtShader->getBufferSize());
+    lib->SetDXILLibrary(&libdxil);
+
+    // Export each specified function to use in the pipeline.
+    {
+        std::vector<std::string> functionNames = m_rtShader->getFunctionNames();
+        for (int i = 0; i < functionNames.size(); ++i)
+        {
+            std::wstring funcNameW = std::wstring(functionNames[i].begin(), functionNames[i].end());
+            lib->DefineExport(funcNameW.c_str());
+        }
+    }
+
+    // [1] : Hit Group
+    // A hit group specifies closest hit, any hit and intersection shaders to be executed when a ray intersects the geometry's triangle/AABB.
+    // In this sample, we only use triangle geometry with a closest hit shader, so others are not set.
+    auto hitGroup = raytracingPipeline.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
+    hitGroup->SetClosestHitShaderImport(m_rtShader->getFunctionW(toyraygun::ShaderFunctionType::ClosestHit).c_str());
+    hitGroup->SetHitGroupExport(kPrimaryHitGroupName);
+    hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+
+    // [2] : Shadow Hit Group
+    // A hit group specifies closest hit, any hit and intersection shaders to be executed when a ray intersects the geometry's triangle/AABB.
+    // In this sample, we only use triangle geometry with a closest hit shader, so others are not set.
+    auto shadowHitGroup = raytracingPipeline.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
+    shadowHitGroup->SetClosestHitShaderImport(m_rtShader->getFunctionW(toyraygun::ShaderFunctionType::ShadowHit).c_str());
+    shadowHitGroup->SetHitGroupExport(kShadowHitGroupName);
+    shadowHitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+
+    // [3]: Raytracing Shader Config
+    // Defines the maximum sizes in bytes for the ray payload and attribute structure.
+    auto shaderConfig = raytracingPipeline.CreateSubobject<CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
+    UINT payloadSize = sizeof(XMFLOAT4) + sizeof(UINT);    // float4 pixelColor
+    UINT attributeSize = sizeof(XMFLOAT2);  // float2 barycentrics
+    shaderConfig->Config(payloadSize, attributeSize);
+
+    // [4]: Local Root Signature
+    // [5]: Subobject to Exports Association
+    // This is a root signature that enables a shader to have unique arguments that come from shader tables.
+    CreateLocalRootSignatureSubobjects(&raytracingPipeline);
+
+    // [6]: Global Root Signature
+    // This is a root signature that is shared across all raytracing shaders invoked during a DispatchRays() call.
+    auto globalRootSignature = raytracingPipeline.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
+    globalRootSignature->SetRootSignature(m_raytracingGlobalRootSignature.Get());
+
+    // [7]: Raytracing Pipeline Config
+    // Defines the maximum TraceRay() recursion depth.
+    auto pipelineConfig = raytracingPipeline.CreateSubobject<CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
+
+    // PERFORMANCE TIP: Set max recursion depth as low as needed 
+    // as drivers may apply optimization strategies for low recursion depths.
+    UINT maxRecursionDepth = 3; // ~ primary rays only. 
+    pipelineConfig->Config(maxRecursionDepth);
+
+#if _DEBUG
+    PrintStateObjectDesc(raytracingPipeline);
+#endif
+
+    // Create the state object.
+    ThrowIfFailed(m_dxrDevice->CreateStateObject(raytracingPipeline, IID_PPV_ARGS(&m_dxrStateObject)), "Couldn't create DirectX Raytracing state object.\n");
+}
+
+void D3D12Renderer::performRaytracing()
+{
+    auto commandList = m_deviceResources->GetCommandList();
+    auto bufferIndex = m_deviceResources->GetCurrentBackBufferIndex();
+
+    auto DispatchRays = [&](auto* commandList, auto* stateObject, auto* dispatchDesc)
+    {
+        
+    };
+
+    commandList->SetComputeRootSignature(m_raytracingGlobalRootSignature.Get());
+
+    // Copy the updated scene constant buffer to GPU.
+    memcpy(&m_mappedConstantData[bufferIndex].constants, &m_sceneCB[bufferIndex], sizeof(m_sceneCB[bufferIndex]));
+    auto cbGpuAddress = m_perFrameConstants->GetGPUVirtualAddress() + bufferIndex * sizeof(m_mappedConstantData[0]);
+    commandList->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantSlot, cbGpuAddress);
+
+    // Bind the heaps, acceleration structure and dispatch rays.
+    D3D12_DISPATCH_RAYS_DESC dispatchDesc = {};
+    commandList->SetDescriptorHeaps(1, m_descriptorHeap.GetAddressOf());
+
+    // Set index and successive vertex buffer decriptor tables
+    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::IndexBuffersSlot, m_indexBuffer.gpuDescriptorHandle);
+    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot, m_vertexBuffer.gpuDescriptorHandle);
+    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::MaterialIDBufferSlot, m_materialIDBuffer.gpuDescriptorHandle);
+    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, m_raytracingOutput.gpuDescriptor);
+    commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, m_topLevelAccelerationStructure->GetGPUVirtualAddress());
+
+    // Since each shader table has only one shader record, the stride is same as the size.
+    dispatchDesc.HitGroupTable.StartAddress = m_hitGroupShaderTable->GetGPUVirtualAddress();
+    dispatchDesc.HitGroupTable.SizeInBytes = m_hitGroupShaderTable->GetDesc().Width;
+    dispatchDesc.HitGroupTable.StrideInBytes = dispatchDesc.HitGroupTable.SizeInBytes / 2;
+    dispatchDesc.MissShaderTable.StartAddress = m_missShaderTable->GetGPUVirtualAddress();
+    dispatchDesc.MissShaderTable.SizeInBytes = m_missShaderTable->GetDesc().Width;
+    dispatchDesc.MissShaderTable.StrideInBytes = dispatchDesc.MissShaderTable.SizeInBytes / 2;
+    dispatchDesc.RayGenerationShaderRecord.StartAddress = m_rayGenShaderTable->GetGPUVirtualAddress();
+    dispatchDesc.RayGenerationShaderRecord.SizeInBytes = m_rayGenShaderTable->GetDesc().Width;
+    dispatchDesc.Width = m_width;
+    dispatchDesc.Height = m_height;
+    dispatchDesc.Depth = 1;
+
+    m_dxrCommandList->SetPipelineState1(m_dxrStateObject.Get());
+    m_dxrCommandList->DispatchRays(&dispatchDesc);
+
+    DispatchRays(m_dxrCommandList.Get(), m_dxrStateObject.Get(), &dispatchDesc);
+}
+
+void D3D12Renderer::createAccumulatePipeline()
 {
     auto device = m_deviceResources->GetD3DDevice();
 
@@ -893,8 +895,8 @@ void D3D12Renderer::createAccumulateKernel()
     NAME_D3D12_OBJECT(m_accumlateStateObject);
 }
 
-// Copy the raytracing output to the backbuffer.
-void D3D12Renderer::accumulateRaytracingOutput()
+// Accumulate output from raytracing.
+void D3D12Renderer::performAccumulate()
 {
     auto commandList = m_deviceResources->GetCommandList();
     auto renderTarget = m_deviceResources->GetRenderTarget();
@@ -921,7 +923,7 @@ void D3D12Renderer::accumulateRaytracingOutput()
     commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(m_accumulateOutput.resource.Get()));
 }
 
-void D3D12Renderer::createPostProcessingKernel()
+void D3D12Renderer::createPostProcessingPipeline()
 {
     auto device = m_deviceResources->GetD3DDevice();
 
@@ -950,7 +952,7 @@ void D3D12Renderer::createPostProcessingKernel()
 }
 
 // Copy the raytracing output to the backbuffer.
-void D3D12Renderer::postProcess()
+void D3D12Renderer::performPostProcessing()
 {
     auto commandList = m_deviceResources->GetCommandList();
     auto renderTarget = m_deviceResources->GetRenderTarget();
@@ -977,7 +979,7 @@ void D3D12Renderer::postProcess()
     commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(m_postProcessingOutput.resource.Get()));
 }
 
-// Copy the raytracing output to the backbuffer.
+// Copy the final image to the backbuffer.
 void D3D12Renderer::copyToBackbuffer()
 {
     auto commandList = m_deviceResources->GetCommandList();

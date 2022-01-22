@@ -10,6 +10,9 @@ RWTexture2D<float4> AccumulateTexture : register(u1);
 
 ConstantBuffer<Uniforms> uniforms : register(b0);
 
+// Accumulates the current frame's image with a running average of all previous frames to
+// reduce noise over time.
+
 [numthreads(1, 1, 1)]
 void main(uint3 idx : SV_DispatchThreadID)
 {
