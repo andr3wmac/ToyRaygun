@@ -25,7 +25,7 @@ ByteAddressBuffer Indices : register(t2, space0);
 StructuredBuffer<Vertex> Vertices : register(t3, space0);
 StructuredBuffer<uint> MaterialIDs : register(t4, space0);
 
-ConstantBuffer<Uniforms> g_sceneCB : register(b0);
+ConstantBuffer<Uniforms> uniforms : register(b0);
 
 // Load three 16 bit indices from a byte addressed buffer.
 uint3 Load3x16BitIndices(uint offsetBytes)
@@ -92,7 +92,7 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
     float2 xy = index;
 
     // Apply a random offset to random number index to decorrelate pixels
-    uint randSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, g_sceneCB.frameIndex, 16);
+    uint randSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, uniforms.frameIndex, 16);
     float2 rndFloat2 = float2(nextRand(randSeed), nextRand(randSeed));
 
     xy += rndFloat2; // Add a random offset to the pixel coordinates for antialiasing
@@ -104,10 +104,10 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
     screenPos.y = -screenPos.y;
 
     // Unproject the pixel coordinate into a ray.
-    float4 world = mul(float4(screenPos, 0, 1), g_sceneCB.camera.invViewProjMtx);
+    float4 world = mul(float4(screenPos, 0, 1), uniforms.camera.invViewProjMtx);
 
     world.xyz /= world.w;
-    origin = g_sceneCB.camera.position.xyz;
+    origin = uniforms.camera.position.xyz;
     direction = normalize(world.xyz - origin);
 }
 
@@ -218,7 +218,7 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
     if (materialID == MATERIAL_DEFAULT)
     {
         // Initialize a random number generator
-        uint randSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, g_sceneCB.frameIndex, 16);
+        uint randSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, uniforms.frameIndex, 16);
 
         // Get random numbers (in polar coordinates), convert to random cartesian uv on the lens
         float2 rndFloat2 = float2(nextRand(randSeed), nextRand(randSeed));
@@ -227,10 +227,10 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
 
         // Apply a random offset to random number index to decorrelate pixels
         uint offset = randSeed;
-        float2 r = float2(halton(offset + g_sceneCB.frameIndex, 0), halton(offset + g_sceneCB.frameIndex, 1));
+        float2 r = float2(halton(offset + uniforms.frameIndex, 0), halton(offset + uniforms.frameIndex, 1));
 
         LightSample light;
-        light = sampleAreaLight(g_sceneCB.light, r, hitPosition, vertexNormal);
+        light = sampleAreaLight(uniforms.light, r, hitPosition, vertexNormal);
 
         float3 primaryLightColor = light.color;
 
@@ -263,15 +263,14 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
     // Emissive
     if (materialID == MATERIAL_EMISSIVE)
     {
-        payload.color = float4(vertexColor, 1.0);
+        payload.color = float4(uniforms.light.color, 1.0);
     }
 }
 
 [shader("miss")]
 void primaryMiss(inout RayPayload payload)
 {
-    float4 background = float4(0.0f, 0.0f, 0.0f, 1.0f);
-    payload.color = background;
+    payload.color = float4(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 [shader("closesthit")]
