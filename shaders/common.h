@@ -33,6 +33,15 @@ struct Uniforms
     AreaLight light;
 };
 
+float D3DX_FLOAT_to_SRGB(float val)
+{
+    if (val < 0.0031308f)
+        val *= 12.92f;
+    else
+        val = 1.055f * pow(val, 1.0f / 2.4f) - 0.055f;
+    return val;
+}
+
 // Returns the i'th element of the Halton sequence using the d'th prime number as a
 // base. The Halton sequence is a "low discrepency" sequence: the values appear
 // random but are more evenly distributed then a purely random sequence. Each random

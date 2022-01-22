@@ -9,6 +9,8 @@
 
 #include "shaders/common.h"
 
+#define MAX_BOUNCES 3
+
 struct Vertex
 {
     float3 position;
@@ -111,7 +113,7 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
 
 float4 tracePrimaryRay(RayDesc ray, uint currentRayRecursionDepth)
 {
-    if (currentRayRecursionDepth >= 3)
+    if (currentRayRecursionDepth >= MAX_BOUNCES)
     {
         return float4(0, 0, 0, 0);
     }
@@ -132,9 +134,9 @@ float4 tracePrimaryRay(RayDesc ray, uint currentRayRecursionDepth)
 
 bool traceShadowRay(RayDesc ray, uint currentRayRecursionDepth)
 {
-    if (currentRayRecursionDepth >= 3)
+    if (currentRayRecursionDepth >= MAX_BOUNCES)
     {
-        return false;
+        return true;
     }
 
     ShadowPayload shadowPayload;
