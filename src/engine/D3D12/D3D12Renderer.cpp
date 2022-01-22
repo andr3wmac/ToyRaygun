@@ -227,7 +227,7 @@ void D3D12Renderer::CreateLocalRootSignatureSubobjects(CD3DX12_STATE_OBJECT_DESC
 }
 
 // Create 2D output texture for raytracing.
-void D3D12Renderer::createTexture(D3DTexture& texture, DXGI_FORMAT format)
+void D3D12Renderer::createTexture(D3D12Texture& texture, DXGI_FORMAT format)
 {
     auto device = m_device->GetD3DDevice();
 
@@ -244,7 +244,7 @@ void D3D12Renderer::createTexture(D3DTexture& texture, DXGI_FORMAT format)
     D3D12_UNORDERED_ACCESS_VIEW_DESC UAVDesc = {};
     UAVDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
     device->CreateUnorderedAccessView(texture.resource.Get(), nullptr, &UAVDesc, uavDescriptorHandle);
-    texture.gpuDescriptor = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_descriptorHeap->GetGPUDescriptorHandleForHeapStart(), texture.descriptorHeapIndex, m_descriptorSize);
+    texture.gpuDescriptorHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_descriptorHeap->GetGPUDescriptorHandleForHeapStart(), texture.descriptorHeapIndex, m_descriptorSize);
 }
 
 void D3D12Renderer::CreateDescriptorHeap()
@@ -610,7 +610,7 @@ UINT D3D12Renderer::AllocateDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE* cpuDescripto
 }
 
 // Create SRV for a buffer.
-UINT D3D12Renderer::CreateBufferSRV(D3DBuffer* buffer, UINT numElements, UINT elementSize)
+UINT D3D12Renderer::CreateBufferSRV(D3D12Buffer* buffer, UINT numElements, UINT elementSize)
 {
     auto device = m_device->GetD3DDevice();
 
@@ -837,7 +837,7 @@ void D3D12Renderer::performRaytracing()
     commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::IndexBuffersSlot,     m_indexBuffer.gpuDescriptorHandle);
     commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot,    m_vertexBuffer.gpuDescriptorHandle);
     commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::MaterialIDBufferSlot, m_materialIDBuffer.gpuDescriptorHandle);
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot,       m_raytracingOutput.gpuDescriptor);
+    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot,       m_raytracingOutput.gpuDescriptorHandle);
 
     commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, m_topLevelAccelerationStructure->GetGPUVirtualAddress());
 
@@ -903,8 +903,8 @@ void D3D12Renderer::performAccumulate()
     commandList->SetComputeRootSignature(m_accumulateRootSignature.Get());
 
     commandList->SetDescriptorHeaps(1, m_descriptorHeap.GetAddressOf());
-    commandList->SetComputeRootDescriptorTable(0, m_raytracingOutput.gpuDescriptor);
-    commandList->SetComputeRootDescriptorTable(1, m_accumulateOutput.gpuDescriptor);
+    commandList->SetComputeRootDescriptorTable(0, m_raytracingOutput.gpuDescriptorHandle);
+    commandList->SetComputeRootDescriptorTable(1, m_accumulateOutput.gpuDescriptorHandle);
 
     // Copy the updated scene constant buffer to GPU.
     memcpy(&m_mappedConstantData[bufferIndex].constants, &m_sceneCB[bufferIndex], sizeof(m_sceneCB[bufferIndex]));
@@ -959,8 +959,8 @@ void D3D12Renderer::performPostProcessing()
     commandList->SetComputeRootSignature(m_postProcessingRootSignature.Get());
 
     commandList->SetDescriptorHeaps(1, m_descriptorHeap.GetAddressOf());
-    commandList->SetComputeRootDescriptorTable(0, m_accumulateOutput.gpuDescriptor);
-    commandList->SetComputeRootDescriptorTable(1, m_postProcessingOutput.gpuDescriptor);
+    commandList->SetComputeRootDescriptorTable(0, m_accumulateOutput.gpuDescriptorHandle);
+    commandList->SetComputeRootDescriptorTable(1, m_postProcessingOutput.gpuDescriptorHandle);
 
     // Copy the updated scene constant buffer to GPU.
     memcpy(&m_mappedConstantData[bufferIndex].constants, &m_sceneCB[bufferIndex], sizeof(m_sceneCB[bufferIndex]));

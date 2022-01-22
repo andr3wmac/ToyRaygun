@@ -121,6 +121,20 @@ struct AccelerationStructureBuffers
     UINT64                 ResultDataMaxSizeInBytes;
 };
 
+struct D3D12Buffer
+{
+    ComPtr<ID3D12Resource> resource;
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle;
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle;
+};
+
+struct D3D12Texture
+{
+    ComPtr<ID3D12Resource> resource;
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle;
+    UINT descriptorHeapIndex;
+};
+
 class GpuUploadBuffer
 {
 public:

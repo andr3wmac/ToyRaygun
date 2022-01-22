@@ -84,13 +84,13 @@ private:
         toyraygun::Uniforms constants;
         uint8_t alignmentPadding[D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT];
     };
-    AlignedSceneConstantBuffer*  m_mappedConstantData;
-    ComPtr<ID3D12Resource>       m_perFrameConstants;
+    AlignedSceneConstantBuffer* m_mappedConstantData;
+    ComPtr<ID3D12Resource>      m_perFrameConstants;
 
     // DirectX Raytracing (DXR) attributes
-    ComPtr<ID3D12Device5> m_dxrDevice;
+    ComPtr<ID3D12Device5>              m_dxrDevice;
     ComPtr<ID3D12GraphicsCommandList5> m_dxrCommandList;
-    ComPtr<ID3D12StateObject> m_dxrStateObject;
+    ComPtr<ID3D12StateObject>          m_dxrStateObject;
 
     // Root signatures
     ComPtr<ID3D12RootSignature> m_raytracingGlobalRootSignature;
@@ -101,19 +101,11 @@ private:
     UINT m_descriptorsAllocated;
     UINT m_descriptorSize;
     
-    // Raytracing scene
+    // Scene
     toyraygun::Uniforms m_sceneCB[kDefaultSwapChainBuffers];
-
-    // Geometry
-    struct D3DBuffer
-    {
-        ComPtr<ID3D12Resource> resource;
-        D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle;
-        D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle;
-    };
-    D3DBuffer m_indexBuffer;
-    D3DBuffer m_vertexBuffer;
-    D3DBuffer m_materialIDBuffer;
+    D3D12Buffer m_indexBuffer;
+    D3D12Buffer m_vertexBuffer;
+    D3D12Buffer m_materialIDBuffer;
 
     // Acceleration structure
     ComPtr<ID3D12Resource> m_bottomLevelAccelerationStructure;
@@ -126,47 +118,39 @@ private:
     UINT m_randomTextureUAVDescriptorHeapIndex;
 
     // Raytracing output
-    struct D3DTexture
-    {
-        ComPtr<ID3D12Resource> resource;
-        D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptor;
-        UINT descriptorHeapIndex;
-    };
-    D3DTexture m_raytracingOutput;
+    D3D12Texture m_raytracingOutput;
 
-    // Shader tables
+    // Raytracing shader tables
     static const wchar_t* kPrimaryHitGroupName;
     static const wchar_t* kShadowHitGroupName;
     ComPtr<ID3D12Resource> m_missShaderTable;
     ComPtr<ID3D12Resource> m_hitGroupShaderTable;
     ComPtr<ID3D12Resource> m_rayGenShaderTable;
 
+    void createRaytracingPipeline();
+    void performRaytracing();
+
     // Accumulate
     ComPtr<ID3D12RootSignature> m_accumulateRootSignature;
     ComPtr<ID3D12PipelineState> m_accumlateStateObject;
-    D3DTexture m_accumulateOutput;
+    D3D12Texture m_accumulateOutput;
+
+    void createAccumulatePipeline();
+    void performAccumulate();
 
     // Post Processing
     ComPtr<ID3D12RootSignature> m_postProcessingRootSignature;
     ComPtr<ID3D12PipelineState> m_postProcessingStateObject;
-    D3DTexture m_postProcessingOutput;
-
-    // Raytracing pipeline
-    void createRaytracingPipeline();
-    void performRaytracing();
-
-    void createAccumulatePipeline();
-    void performAccumulate();
+    D3D12Texture m_postProcessingOutput;
 
     void createPostProcessingPipeline();
     void performPostProcessing();
 
     void copyToBackbuffer();
-
     void createRandomTexture();
     void updateUniforms();
     void createOutputTextures();
-    void createTexture(D3DTexture& texture, DXGI_FORMAT format);
+    void createTexture(D3D12Texture& texture, DXGI_FORMAT format);
 
     // Other
     void RecreateD3D();
@@ -184,5 +168,5 @@ private:
     void BuildShaderTables();
     void UpdateForSizeChange(UINT clientWidth, UINT clientHeight);
     UINT AllocateDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE* cpuDescriptor, UINT descriptorIndexToUse = UINT_MAX);
-    UINT CreateBufferSRV(D3DBuffer* buffer, UINT numElements, UINT elementSize);
+    UINT CreateBufferSRV(D3D12Buffer* buffer, UINT numElements, UINT elementSize);
 };
