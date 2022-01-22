@@ -641,7 +641,7 @@ void D3D12Renderer::UpdateForSizeChange(UINT width, UINT height)
 
 void D3D12Renderer::createOutputTextures()
 {
-    createTexture(m_raytracingOutput, m_deviceResources->GetBackBufferFormat());
+    createTexture(m_raytracingOutput, DXGI_FORMAT_R32G32B32A32_FLOAT);
     createTexture(m_accumulateOutput, DXGI_FORMAT_R32G32B32A32_FLOAT);
     createTexture(m_postProcessingOutput, m_deviceResources->GetBackBufferFormat());
 }

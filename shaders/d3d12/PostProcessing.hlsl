@@ -19,5 +19,7 @@ void main(uint3 idx : SV_DispatchThreadID)
     // input image into a range which can be displayed on screen.
     color = color / (1.0f + color);
 
+    //color = float3(D3DX_FLOAT_to_SRGB(color.r), D3DX_FLOAT_to_SRGB(color.g), D3DX_FLOAT_to_SRGB(color.b));
+
     OutputTexture[idx.xy] = float4(color.rgb, 1.0);
 }
