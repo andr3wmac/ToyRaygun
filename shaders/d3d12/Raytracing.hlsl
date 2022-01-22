@@ -226,14 +226,13 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         float2 rndUV = float2(cos(rnd.x) * rnd.y, sin(rnd.x) * rnd.y);
 
         // Apply a random offset to random number index to decorrelate pixels
-        //uint offset = (uint)RandomTexture.Load(DispatchRaysIndex().xy).x;
         uint offset = randSeed;
         float2 r = float2(halton(offset + g_sceneCB.frameIndex, 0), halton(offset + g_sceneCB.frameIndex, 1));
 
         LightSample light;
         light = sampleAreaLight(g_sceneCB.light, r, hitPosition, vertexNormal);
 
-        float3 color = light.color * vertexColor;
+        float3 primaryLightColor = light.color;
 
         // Trace Shadow Ray
         RayDesc shadowRay;
@@ -244,6 +243,7 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         bool shadowRayHit = traceShadowRay(shadowRay, payload.recursionDepth);
         float shadowFactor = shadowRayHit ? 0.0 : 1.0;
 
+        // Trace Secondary Ray
         float3 sampleDirection = sampleCosineWeightedHemisphere(rndUV);
         sampleDirection = alignHemisphereWithNormal(sampleDirection, vertexNormal);
         sampleDirection = normalize(sampleDirection);
@@ -254,10 +254,10 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         secondaryRay.TMin = 0.001;
         secondaryRay.TMax = 10000.0;
 
-        float4 secondaryColor = tracePrimaryRay(secondaryRay, payload.recursionDepth);
+        float3 secondaryLightColor = tracePrimaryRay(secondaryRay, payload.recursionDepth).rgb;
 
         // Final Color
-        payload.color = (float4(color.rgb, 1.0f) * shadowFactor) + secondaryColor;
+        payload.color = float4((primaryLightColor * vertexColor * shadowFactor) + (secondaryLightColor * vertexColor), 1.0);
     }
 
     // Emissive
