@@ -76,7 +76,7 @@ void D3D12Renderer::updateUniforms()
     m_sceneCB[bufferIndex].light.forward.set(bx::Vec3(0.0f, -1.0f, 0.0f));
     m_sceneCB[bufferIndex].light.right.set(bx::Vec3(0.25f, 0.0f, 0.0f));
     m_sceneCB[bufferIndex].light.up.set(bx::Vec3(0.0f, 0.0f, 0.25f));
-    m_sceneCB[bufferIndex].light.color.set(bx::Vec3(4.0f, 4.0f, 4.0f));
+    m_sceneCB[bufferIndex].light.color.set(bx::Vec3(1.0f, 1.0f, 1.0f));
 }
 
 // Initialize scene rendering parameters.

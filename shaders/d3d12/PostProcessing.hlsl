@@ -15,11 +15,11 @@ void main(uint3 idx : SV_DispatchThreadID)
 {
     float3 color = InputTexture[idx.xy].rgb;
 
-    // Apply a very simple tonemapping function to reduce the dynamic range of the
-    // input image into a range which can be displayed on screen.
-    color = color / (1.0f + color);
+    // Tonemapping.
+    color = ACESFilm(color);
 
-    //color = float3(D3DX_FLOAT_to_SRGB(color.r), D3DX_FLOAT_to_SRGB(color.g), D3DX_FLOAT_to_SRGB(color.b));
+    // Convert to SRGB.
+    color = float3(D3DX_FLOAT_to_SRGB(color.r), D3DX_FLOAT_to_SRGB(color.g), D3DX_FLOAT_to_SRGB(color.b));
 
     OutputTexture[idx.xy] = float4(color.rgb, 1.0);
 }
