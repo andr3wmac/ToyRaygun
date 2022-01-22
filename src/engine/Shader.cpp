@@ -148,7 +148,7 @@ std::wstring Shader::getFunctionW(ShaderFunctionType functionType)
     return L"";
 }
 
-bool Shader::compile()
+bool Shader::compile(std::string entryPoint)
 {
     return false;
 }
@@ -159,6 +159,11 @@ std::string Shader::getSourceText()
 }
 
 void* Shader::getBufferPointer()
+{
+    return nullptr;
+}
+
+void* Shader::getCompiledShader()
 {
     return nullptr;
 }

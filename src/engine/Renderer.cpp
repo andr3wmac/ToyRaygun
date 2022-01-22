@@ -44,6 +44,16 @@ void Renderer::setRaytracingShader(Shader* shader)
 	m_rtShader = shader;
 }
 
+void Renderer::setAccumulateShader(Shader* shader)
+{
+    m_accumulateShader = shader;
+}
+
+void Renderer::setPostProcessingShader(Shader* shader)
+{
+    m_postProcessingShader = shader;
+}
+
 void Renderer::renderFrame()
 {
     m_frameIndex++;

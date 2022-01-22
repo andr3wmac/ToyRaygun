@@ -23,6 +23,8 @@ namespace toyraygun
     protected:
         int m_frameIndex;
         Shader* m_rtShader;
+        Shader* m_accumulateShader;
+        Shader* m_postProcessingShader;
 
         // Viewport dimensions.
         int m_width;
@@ -54,6 +56,8 @@ namespace toyraygun
 
         virtual Shader* getRaytracingShader();
         virtual void setRaytracingShader(Shader* shader);
+        virtual void setAccumulateShader(Shader* shader);
+        virtual void setPostProcessingShader(Shader* shader);
     };
 }
 

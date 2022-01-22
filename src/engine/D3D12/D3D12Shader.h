@@ -28,8 +28,9 @@ protected:
 public:
     D3D12Shader();
 
-    virtual bool compile();
+    virtual bool compile(std::string entryPoint = "");
 
     virtual void* getBufferPointer();
     virtual size_t getBufferSize();
+    virtual void* getCompiledShader();
 };

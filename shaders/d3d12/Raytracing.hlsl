@@ -18,7 +18,7 @@ struct Vertex
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
 RWTexture2D<float4> RenderTarget : register(u0);
-RWTexture2D<float4> RandomTexture : register(u1);
+//RWTexture2D<float4> RandomTexture : register(u1);
 ByteAddressBuffer Indices : register(t2, space0);
 StructuredBuffer<Vertex> Vertices : register(t3, space0);
 StructuredBuffer<uint> MaterialIDs : register(t4, space0);
@@ -107,17 +107,6 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
     world.xyz /= world.w;
     origin = g_sceneCB.camera.position.xyz;
     direction = normalize(world.xyz - origin);
-}
-
-// Diffuse lighting calculation.
-float3 CalculateDiffuseLighting(float3 hitPosition, float3 lightColor, float3 albedo, float3 normal)
-{
-    float3 pixelToLight = normalize(g_sceneCB.light.position.xyz - hitPosition);
-
-    // Diffuse contribution.
-    float fNDotL = max(0.0f, dot(pixelToLight, normal));
-
-    return albedo * lightColor * fNDotL;
 }
 
 float4 tracePrimaryRay(RayDesc ray, uint currentRayRecursionDepth)
@@ -226,26 +215,37 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
     // Default
     if (materialID == MATERIAL_DEFAULT)
     {
+        // Initialize a random number generator
+        uint randSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, g_sceneCB.frameIndex, 16);
+
+        // Get random numbers (in polar coordinates), convert to random cartesian uv on the lens
+        float2 rndFloat2 = float2(nextRand(randSeed), nextRand(randSeed));
+        float2 rnd = float2(2.0f * 3.14159265f * rndFloat2.x, rndFloat2.y);
+        float2 rndUV = float2(cos(rnd.x) * rnd.y, sin(rnd.x) * rnd.y);
+
         // Apply a random offset to random number index to decorrelate pixels
         //uint offset = (uint)RandomTexture.Load(DispatchRaysIndex().xy).x;
-        uint offset = 0;
-        float2 r = float2(halton(offset, 0),
-            halton(offset, 1));
+        uint offset = randSeed;
+        float2 r = float2(halton(offset + g_sceneCB.frameIndex, 0), halton(offset + g_sceneCB.frameIndex, 1));
 
         LightSample light;
         light = sampleAreaLight(g_sceneCB.light, r, hitPosition, vertexNormal);
 
-        float3 color = CalculateDiffuseLighting(hitPosition, light.color, vertexColor, vertexNormal);
-        payload.color = float4(color, 1.0);
+        float3 color = light.color * vertexColor;
 
-        uint randSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, g_sceneCB.frameIndex, 16);
-        float2 rndFloat2 = float2(nextRand(randSeed), nextRand(randSeed));
+        // Trace Shadow Ray
+        RayDesc shadowRay;
+        shadowRay.Origin = hitPosition;
+        shadowRay.Direction = light.direction;
+        shadowRay.TMin = 0.001;
+        shadowRay.TMax = 10000.0;
+        bool shadowRayHit = traceShadowRay(shadowRay, payload.recursionDepth);
+        float shadowFactor = shadowRayHit ? 0.0 : 1.0;
 
-        float3 sampleDirection = sampleCosineWeightedHemisphere(rndFloat2);
+        float3 sampleDirection = sampleCosineWeightedHemisphere(rndUV);
         sampleDirection = alignHemisphereWithNormal(sampleDirection, vertexNormal);
         sampleDirection = normalize(sampleDirection);
 
-        // Trace Secondary Ray
         RayDesc secondaryRay;
         secondaryRay.Origin = hitPosition;
         secondaryRay.Direction = normalize(sampleDirection);
@@ -254,16 +254,8 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
 
         float4 secondaryColor = tracePrimaryRay(secondaryRay, payload.recursionDepth);
 
-        // Trace Shadow Ray
-        RayDesc shadowRay;
-        shadowRay.Origin = hitPosition;
-        shadowRay.Direction = float3(g_sceneCB.light.position - hitPosition);
-        shadowRay.TMin = 0.001;
-        shadowRay.TMax = 10000.0;
-        bool shadowRayHit = traceShadowRay(shadowRay, payload.recursionDepth);
-
-        float factor = shadowRayHit ? 0.0 : 1.0;
-        payload.color = (float4(sampleDirection.rgb, 1.0f) * factor);
+        // Final Color
+        payload.color = (float4(color.rgb, 1.0f) * shadowFactor) + secondaryColor;
     }
 
     // Emissive

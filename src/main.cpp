@@ -76,12 +76,42 @@ int main (int argc, char *args[])
         // Print error.
     }
 
+    Shader* accumulateShader = Platform::createShader();
+    if (accumulateShader->load("Accumulate"))
+    {
+        accumulateShader->addFunction("accumulate", ShaderFunctionType::Accumulate);
+
+        if (!accumulateShader->compile("main"))
+        {
+            return -1;
+        }
+    }
+    else {
+        // Print error.
+    }
+
+    Shader* postProcessingShader = Platform::createShader();
+    if (postProcessingShader->load("PostProcessing"))
+    {
+        postProcessingShader->addFunction("postprocessing", ShaderFunctionType::PostProcessing);
+
+        if (!postProcessingShader->compile("main"))
+        {
+            return -1;
+        }
+    }
+    else {
+        // Print error.
+    }
+
     Renderer* renderer = Platform::createRenderer();
     if (!renderer->init(platform))
     {
         return -1;
     }
     renderer->setRaytracingShader(rtShader);
+    renderer->setAccumulateShader(accumulateShader);
+    renderer->setPostProcessingShader(postProcessingShader);
     renderer->setCameraPosition(bx::Vec3(0.0f, 1.0f, 3.38f));
     renderer->setCameraLookAt(bx::Vec3(0.0f, 1.0f, -1.0f));
 

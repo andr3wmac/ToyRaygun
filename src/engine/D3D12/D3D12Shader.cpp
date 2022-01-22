@@ -19,7 +19,7 @@ D3D12Shader::D3D12Shader()
     }
 }
 
-bool D3D12Shader::compile()
+bool D3D12Shader::compile(std::string entryPoint)
 {
     std::string sourceString = m_sourceText.str();
     HRESULT hr = m_library->CreateBlobWithEncodingOnHeapCopy(sourceString.c_str(), sourceString.length(),
@@ -37,13 +37,20 @@ bool D3D12Shader::compile()
     }
 
     std::wstring sourceNameWCHAR = std::wstring(m_sourcePath.begin(), m_sourcePath.end());
+    std::wstring entryPointWCHAR = std::wstring(entryPoint.begin(), entryPoint.end());
+
+    std::wstring targetProfile = L"lib_6_3";
+    if (entryPoint != "")
+    {
+        targetProfile = L"cs_6_3";
+    }
 
     CComPtr<IDxcOperationResult> result;
     hr = m_compiler->Compile(
         m_sourceBlob,               // pSource
         sourceNameWCHAR.c_str(),    // pSourceName
-        L"",                        // pEntryPoint
-        L"lib_6_3",                 // pTargetProfile
+        entryPointWCHAR.c_str(),    // pEntryPoint
+        targetProfile.c_str(),      // pTargetProfile
         NULL, 0,                    // pArguments, argCount
         NULL, 0,                    // pDefines, defineCount
         NULL,                       // pIncludeHandler
@@ -95,4 +102,9 @@ size_t D3D12Shader::getBufferSize()
     }
 
     return m_compiledBlob->GetBufferSize();
+}
+
+void* D3D12Shader::getCompiledShader()
+{
+    return m_compiledBlob;
 }

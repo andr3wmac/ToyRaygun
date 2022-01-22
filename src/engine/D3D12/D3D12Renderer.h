@@ -126,9 +126,13 @@ private:
     UINT m_randomTextureUAVDescriptorHeapIndex;
 
     // Raytracing output
-    ComPtr<ID3D12Resource> m_raytracingOutput;
-    D3D12_GPU_DESCRIPTOR_HANDLE m_raytracingOutputResourceUAVGpuDescriptor;
-    UINT m_raytracingOutputResourceUAVDescriptorHeapIndex;
+    struct D3DTexture
+    {
+        ComPtr<ID3D12Resource> resource;
+        D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptor;
+        UINT descriptorHeapIndex;
+    };
+    D3DTexture m_raytracingOutput;
 
     // Shader tables
     static const wchar_t* kPrimaryHitGroupName;
@@ -137,11 +141,32 @@ private:
     ComPtr<ID3D12Resource> m_hitGroupShaderTable;
     ComPtr<ID3D12Resource> m_rayGenShaderTable;
 
+    // Accumulate Kernel
+    ComPtr<ID3D12RootSignature> m_accumulateRootSignature;
+    ComPtr<ID3D12PipelineState> m_accumlateStateObject;
+    D3DTexture m_accumulateOutput;
+
+    // Post Processing
+    ComPtr<ID3D12RootSignature> m_postProcessingRootSignature;
+    ComPtr<ID3D12PipelineState> m_postProcessingStateObject;
+    D3DTexture m_postProcessingOutput;
+
     // Raytracing pipeline
     void DoRaytracing();
     void createRaytracingPipelineStateObject();
     void createRandomTexture();
     void updateUniforms();
+
+    void createAccumulateKernel();
+    void accumulateRaytracingOutput();
+
+    void createPostProcessingKernel();
+    void postProcess();
+
+    void copyToBackbuffer();
+
+    void createOutputTextures();
+    void createTexture(D3DTexture& texture, DXGI_FORMAT format);
 
     // Other
     void RecreateD3D();
@@ -153,14 +178,11 @@ private:
     void SerializeAndCreateRaytracingRootSignature(D3D12_ROOT_SIGNATURE_DESC& desc, ComPtr<ID3D12RootSignature>* rootSig);
     void CreateRootSignatures();
     void CreateLocalRootSignatureSubobjects(CD3DX12_STATE_OBJECT_DESC* raytracingPipeline);
-    
     void CreateDescriptorHeap();
-    void CreateRaytracingOutputResource();
     void BuildGeometry(toyraygun::Scene* scene);
     void BuildAccelerationStructures();
     void BuildShaderTables();
     void UpdateForSizeChange(UINT clientWidth, UINT clientHeight);
-    void CopyRaytracingOutputToBackbuffer();
     UINT AllocateDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE* cpuDescriptor, UINT descriptorIndexToUse = UINT_MAX);
     UINT CreateBufferSRV(D3DBuffer* buffer, UINT numElements, UINT elementSize);
 };
