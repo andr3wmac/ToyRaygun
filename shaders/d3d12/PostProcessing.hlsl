@@ -11,7 +11,7 @@ RWTexture2D<float4> OutputTexture : register(u1);
 ConstantBuffer<Uniforms> uniforms : register(b0);
 
 [numthreads(1, 1, 1)]
-void main(uint3 idx : SV_DispatchThreadID)
+void postProcess(uint3 idx : SV_DispatchThreadID)
 {
     float3 color = InputTexture[idx.xy].rgb;
 

@@ -14,7 +14,7 @@ ConstantBuffer<Uniforms> uniforms : register(b0);
 // reduce noise over time.
 
 [numthreads(1, 1, 1)]
-void main(uint3 idx : SV_DispatchThreadID)
+void accumulate(uint3 idx : SV_DispatchThreadID)
 {
     float3 color = InputTexture[idx.xy].rgb;
 
