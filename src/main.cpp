@@ -60,9 +60,6 @@ int main (int argc, char *args[])
     {
         postProcessingShader->addFunction("vert", ShaderFunctionType::Vertex);
         postProcessingShader->addFunction("frag", ShaderFunctionType::Fragment);
-        
-        // temporary until dx12 is converted
-        postProcessingShader->addFunction("postProcess", ShaderFunctionType::Compute);
 
         if (!postProcessingShader->compile(ShaderType::Graphics))
         {
