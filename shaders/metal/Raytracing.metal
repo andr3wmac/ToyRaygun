@@ -38,14 +38,14 @@ struct Intersection
 };
 
 // Ray Generation
-kernel void rayKernel(uint2 tid [[thread_position_in_grid]],
-                      // Buffers bound on the CPU. Note that 'constant' should be used for small
-                      // read-only data which will be reused across threads. 'device' should be
-                      // used for writable data or data which will only be used by a single thread.
-                      constant Uniforms & uniforms,
-                      device Ray *rays,
-                      texture2d<unsigned int> randomTex,
-                      texture2d<float, access::write> dstTex)
+kernel void raygen(uint2 tid [[thread_position_in_grid]],
+                  // Buffers bound on the CPU. Note that 'constant' should be used for small
+                  // read-only data which will be reused across threads. 'device' should be
+                  // used for writable data or data which will only be used by a single thread.
+                  constant Uniforms & uniforms,
+                  device Ray *rays,
+                  texture2d<unsigned int> randomTex,
+                  texture2d<float, access::write> dstTex)
 {
     // Since we aligned the thread count to the threadgroup size, the thread index may be out of bounds
     // of the render target size.
@@ -112,7 +112,7 @@ inline T interpolateVertexAttribute(device T *attributes, Intersection intersect
 }
 
 // Consumes ray/triangle intersection results to compute the shaded image
-kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
+kernel void primaryHit(uint2 tid [[thread_position_in_grid]],
                         constant Uniforms & uniforms,
                         device Ray *rays,
                         device Ray *shadowRays,
@@ -216,12 +216,12 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
 
 // Checks if a shadow ray hit something on the way to the light source. If not, the point the
 // shadow ray started from was not in shadow so it's color should be added to the output image.
-kernel void shadowKernel(uint2 tid [[thread_position_in_grid]],
-                         constant Uniforms & uniforms,
-                         device Ray *shadowRays,
-                         device float *intersections,
-                         texture2d<float, access::read> srcTex,
-                         texture2d<float, access::write> dstTex)
+kernel void shadowHit(uint2 tid [[thread_position_in_grid]],
+                     constant Uniforms & uniforms,
+                     device Ray *shadowRays,
+                     device float *intersections,
+                     texture2d<float, access::read> srcTex,
+                     texture2d<float, access::write> dstTex)
 {
     if (tid.x < uniforms.width && tid.y < uniforms.height) {
         unsigned int rayIdx = tid.y * uniforms.width + tid.x;

@@ -40,7 +40,7 @@ int main (int argc, char *args[])
     Shader* accumulateShader = Engine::createShader();
     if (accumulateShader->load("Accumulate"))
     {
-        accumulateShader->addFunction("main", ShaderFunctionType::Compute);
+        accumulateShader->addFunction("accumulate", ShaderFunctionType::Compute);
 
         if (!accumulateShader->compile(ShaderType::Compute))
         {
@@ -55,7 +55,7 @@ int main (int argc, char *args[])
     Shader* postProcessingShader = Engine::createShader();
     if (postProcessingShader->load("PostProcessing"))
     {
-        postProcessingShader->addFunction("main", ShaderFunctionType::Compute);
+        postProcessingShader->addFunction("postProcess", ShaderFunctionType::Compute);
 
         if (!postProcessingShader->compile(ShaderType::Compute))
         {

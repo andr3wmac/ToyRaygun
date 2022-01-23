@@ -28,6 +28,7 @@
 #import <QuartzCore/CAMetalLayer.h>
 
 using namespace simd;
+using namespace toyraygun;
 
 static const NSUInteger maxFramesInFlight = 3;
 static const size_t alignedUniformsSize = (sizeof(toyraygun::Uniforms) + 255) & ~255;
@@ -102,23 +103,11 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     return self;
 }
 
-- (void)loadMetal
-{
-    toyraygun::Shader* rtShader = _parent->getRaytracingShader();
-    _rtLib = (id<MTLLibrary>)rtShader->getCompiledShader();
-    
-    toyraygun::Shader* accumulateShader = _parent->getAccumulateShader();
-    _accumulateLib = (id<MTLLibrary>)accumulateShader->getCompiledShader();
-    
-    toyraygun::Shader* postProcessingShader = _parent->getPostProcessingShader();
-    _postProcessingLib = (id<MTLLibrary>)postProcessingShader->getCompiledShader();
-
-    _queue = [_device newCommandQueue];
-}
-
 - (void)createPipelines
 {
     NSError *error = NULL;
+ 
+    _queue = [_device newCommandQueue];
     
     // Create compute pipelines will will execute code on the GPU
     MTLComputePipelineDescriptor *computeDescriptor = [[MTLComputePipelineDescriptor alloc] init];
@@ -126,8 +115,15 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // Set to YES to allow compiler to make certain optimizations
     computeDescriptor.threadGroupSizeIsMultipleOfThreadExecutionWidth = YES;
     
+    // Raytracing
+    toyraygun::Shader* rtShader = _parent->getRaytracingShader();
+    _rtLib = (id<MTLLibrary>)rtShader->getCompiledShader();
+    
+    NSString* rayGenFnName = [NSString stringWithCString:rtShader->getFunction(ShaderFunctionType::RayGen).c_str()
+                                                encoding:[NSString defaultCStringEncoding]];
+    
     // Generates rays according to view/projection matrices
-    computeDescriptor.computeFunction = [_rtLib newFunctionWithName:@"rayKernel"];
+    computeDescriptor.computeFunction = [_rtLib newFunctionWithName:rayGenFnName];
     
     _rayPipeline = [_device newComputePipelineStateWithDescriptor:computeDescriptor
                                                           options:0
@@ -137,8 +133,11 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     if (!_rayPipeline)
         NSLog(@"Failed to create pipeline state: %@", error);
         
+    NSString* closestHitFnName = [NSString stringWithCString:rtShader->getFunction(ShaderFunctionType::ClosestHit).c_str()
+                                                encoding:[NSString defaultCStringEncoding]];
+    
     // Consumes ray/scene intersection test results to perform shading
-    computeDescriptor.computeFunction = [_rtLib newFunctionWithName:@"shadeKernel"];
+    computeDescriptor.computeFunction = [_rtLib newFunctionWithName:closestHitFnName];
     
     _shadePipeline = [_device newComputePipelineStateWithDescriptor:computeDescriptor
                                                           options:0
@@ -148,8 +147,11 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     if (!_shadePipeline)
         NSLog(@"Failed to create pipeline state: %@", error);
     
+    NSString* shadowFnName = [NSString stringWithCString:rtShader->getFunction(ShaderFunctionType::ShadowHit).c_str()
+                                                encoding:[NSString defaultCStringEncoding]];
+    
     // Consumes shadow ray intersection tests to update the output image
-    computeDescriptor.computeFunction = [_rtLib newFunctionWithName:@"shadowKernel"];
+    computeDescriptor.computeFunction = [_rtLib newFunctionWithName:shadowFnName];
     
     _shadowPipeline = [_device newComputePipelineStateWithDescriptor:computeDescriptor
                                                              options:0
@@ -158,9 +160,15 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     
     if (!_shadowPipeline)
         NSLog(@"Failed to create pipeline state: %@", error);
+    
+    // Accumulate Pipeline
+    toyraygun::Shader* accumulateShader = _parent->getAccumulateShader();
+    _accumulateLib = (id<MTLLibrary>)accumulateShader->getCompiledShader();
 
-    // Averages the current frame's output image with all previous frames
-    computeDescriptor.computeFunction = [_accumulateLib newFunctionWithName:@"accumulateKernel"];
+    NSString* accumulateFnName = [NSString stringWithCString:accumulateShader->getFunction(ShaderFunctionType::Compute).c_str()
+                                                    encoding:[NSString defaultCStringEncoding]];
+    
+    computeDescriptor.computeFunction = [_accumulateLib newFunctionWithName:accumulateFnName];
     
     _accumulatePipeline = [_device newComputePipelineStateWithDescriptor:computeDescriptor
                                                                  options:0
@@ -169,6 +177,10 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     
     if (!_accumulatePipeline)
         NSLog(@"Failed to create pipeline state: %@", error);
+    
+    // Post Processing Pipeline
+    toyraygun::Shader* postProcessingShader = _parent->getPostProcessingShader();
+    _postProcessingLib = (id<MTLLibrary>)postProcessingShader->getCompiledShader();
 
     // Copies rendered scene into the MTKView
     MTLRenderPipelineDescriptor *renderDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
@@ -187,7 +199,6 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 {
     _sem = dispatch_semaphore_create(maxFramesInFlight);
     
-    [self loadMetal];
     [self createPipelines];
     
     // Uniform buffer contains a few small values which change from frame to frame. We will have up to 3

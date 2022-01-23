@@ -16,7 +16,7 @@ using namespace metal;
 
 // Accumulates the current frame's image with a running average of all previous frames to
 // reduce noise over time.
-kernel void accumulateKernel(uint2 tid [[thread_position_in_grid]],
+kernel void accumulate(uint2 tid [[thread_position_in_grid]],
                              constant Uniforms & uniforms,
                              texture2d<float> renderTex,
                              texture2d<float> prevTex,
