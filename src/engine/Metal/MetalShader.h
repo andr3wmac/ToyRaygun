@@ -17,7 +17,7 @@ namespace toyraygun
         
     public:
         virtual bool compile(ShaderType type);
-        virtual void* getCompiledShader();
+        virtual void* getCompiledShader(ShaderFunctionType type = ShaderFunctionType::None);
     };
 }
 

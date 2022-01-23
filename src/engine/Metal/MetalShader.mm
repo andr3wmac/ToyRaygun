@@ -38,7 +38,7 @@ bool MetalShader::compile(ShaderType type)
     return true;
 }
 
-void* MetalShader::getCompiledShader()
+void* MetalShader::getCompiledShader(ShaderFunctionType type)
 {
     return m_compiledLibrary;
 }

@@ -116,7 +116,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     computeDescriptor.threadGroupSizeIsMultipleOfThreadExecutionWidth = YES;
     
     // Raytracing
-    toyraygun::Shader* rtShader = _parent->getRaytracingShader();
+    toyraygun::Shader* rtShader = _parent->getShader("Raytracing");
     _rtLib = (id<MTLLibrary>)rtShader->getCompiledShader();
     
     NSString* rayGenFnName = [NSString stringWithCString:rtShader->getFunction(ShaderFunctionType::RayGen).c_str()
@@ -162,7 +162,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         NSLog(@"Failed to create pipeline state: %@", error);
     
     // Accumulate Pipeline
-    toyraygun::Shader* accumulateShader = _parent->getAccumulateShader();
+    toyraygun::Shader* accumulateShader = _parent->getShader("Accumulate");
     _accumulateLib = (id<MTLLibrary>)accumulateShader->getCompiledShader();
 
     NSString* accumulateFnName = [NSString stringWithCString:accumulateShader->getFunction(ShaderFunctionType::Compute).c_str()
@@ -179,7 +179,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         NSLog(@"Failed to create pipeline state: %@", error);
     
     // Post Processing Pipeline
-    toyraygun::Shader* postProcessingShader = _parent->getPostProcessingShader();
+    toyraygun::Shader* postProcessingShader = _parent->getShader("PostProcessing");
     _postProcessingLib = (id<MTLLibrary>)postProcessingShader->getCompiledShader();
     
     NSString* vertexFnName = [NSString stringWithCString:postProcessingShader->getFunction(ShaderFunctionType::Vertex).c_str()
