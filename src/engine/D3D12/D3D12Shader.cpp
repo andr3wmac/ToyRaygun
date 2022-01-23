@@ -19,7 +19,7 @@ D3D12Shader::D3D12Shader()
     }
 }
 
-bool D3D12Shader::compile(std::string entryPoint)
+bool D3D12Shader::compile(ShaderType type)
 {
     std::string sourceString = m_sourceText.str();
     HRESULT hr = m_library->CreateBlobWithEncodingOnHeapCopy(sourceString.c_str(), sourceString.length(),
@@ -36,25 +36,32 @@ bool D3D12Shader::compile(std::string entryPoint)
         return false;
     }
 
-    std::wstring sourceNameWCHAR = std::wstring(m_sourcePath.begin(), m_sourcePath.end());
-    std::wstring entryPointWCHAR = std::wstring(entryPoint.begin(), entryPoint.end());
+    std::wstring sourceName = std::wstring(m_sourcePath.begin(), m_sourcePath.end());
+    std::wstring entryPoint = L"";
+    std::wstring targetProfile = L"";
 
-    std::wstring targetProfile = L"lib_6_3";
-    if (entryPoint != "")
+    if (type == ShaderType::Compute)
     {
+        entryPoint = getFunctionW(ShaderFunctionType::Compute);
         targetProfile = L"cs_6_3";
+    }
+
+    if (type == ShaderType::Raytrace)
+    {
+        entryPoint = L"";
+        targetProfile = L"lib_6_3";
     }
 
     CComPtr<IDxcOperationResult> result;
     hr = m_compiler->Compile(
-        m_sourceBlob,               // pSource
-        sourceNameWCHAR.c_str(),    // pSourceName
-        entryPointWCHAR.c_str(),    // pEntryPoint
-        targetProfile.c_str(),      // pTargetProfile
-        NULL, 0,                    // pArguments, argCount
-        NULL, 0,                    // pDefines, defineCount
-        NULL,                       // pIncludeHandler
-        &result);                   // ppResult
+        m_sourceBlob,          // pSource
+        sourceName.c_str(),    // pSourceName
+        entryPoint.c_str(),    // pEntryPoint
+        targetProfile.c_str(), // pTargetProfile
+        NULL, 0,               // pArguments, argCount
+        NULL, 0,               // pDefines, defineCount
+        NULL,                  // pIncludeHandler
+        &result);              // ppResult
 
     if (SUCCEEDED(hr))
     {

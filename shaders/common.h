@@ -159,7 +159,30 @@ inline LightSample sampleAreaLight(AreaLight light,
 }
 
 // Generates a seed for a random number generator from 2 inputs plus a backoff
-uint initRand(uint val0, uint val1, uint backoff = 16)
+struct RandomSeed
+{
+    uint seed;
+    float4 random;
+};
+
+RandomSeed nextRand(RandomSeed src)
+{
+    uint seed = (1664525u * src.seed + 1013904223u);
+    src.random.x = float(seed & 0x00FFFFFF) / float(0x01000000);
+
+    seed = (1664525u * seed + 1013904223u);
+    src.random.y = float(seed & 0x00FFFFFF) / float(0x01000000);
+
+    seed = (1664525u * seed + 1013904223u);
+    src.random.z = float(seed & 0x00FFFFFF) / float(0x01000000);
+
+    seed = (1664525u * seed + 1013904223u);
+    src.random.w = float(seed & 0x00FFFFFF) / float(0x01000000);
+
+    return src;
+}
+
+RandomSeed initRand(uint val0, uint val1, uint backoff = 16)
 {
     uint v0 = val0, v1 = val1, s0 = 0;
 
@@ -169,14 +192,10 @@ uint initRand(uint val0, uint val1, uint backoff = 16)
         v0 += ((v1 << 4) + 0xa341316c) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4);
         v1 += ((v0 << 4) + 0xad90777d) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761e);
     }
-    return v0;
-}
 
-// Takes our seed, updates it, and returns a pseudorandom float in [0..1]
-float nextRand(uint s)
-{
-    s = (1664525u * s + 1013904223u);
-    return float(s & 0x00FFFFFF) / float(0x01000000);
+    RandomSeed src;
+    src.seed = v0;
+    return nextRand(src);
 }
 
 // ACES tone mapping curve fit to go from HDR to LDR

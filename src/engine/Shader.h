@@ -13,15 +13,31 @@
 
 namespace toyraygun
 {
-    enum ShaderFunctionType {
+    enum class ShaderType {
         None = 0,
+        Graphics,
+        Compute,
+        Raytrace,
+        Count
+    };
+
+    enum class ShaderFunctionType {
+        None = 0,
+
+        // Graphics Types
+        Vertex,
+        Fragment,
+        
+        // Compute Types
+        Compute,
+
+        // Raytracing Types
         RayGen,
         ClosestHit,
         Miss,
         ShadowHit,
         ShadowMiss,
-        Accumulate,
-        PostProcessing,
+
         Count
     };
 
@@ -41,9 +57,9 @@ namespace toyraygun
         std::string m_sourcePath;
         std::stringstream m_sourceText;
 
-        virtual bool load(std::string path, bool doPreprocess = true);
+        virtual bool load(std::string path, bool preprocess = true);
         virtual void preprocess();
-        virtual bool compile(std::string entryPoint = "");
+        virtual bool compile(ShaderType type);
 
         virtual void addFunction(std::string functionName, ShaderFunctionType functionType = ShaderFunctionType::None);
         virtual std::vector<std::string> getFunctionNames();

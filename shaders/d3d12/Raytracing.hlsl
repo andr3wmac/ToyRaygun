@@ -92,10 +92,9 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
     float2 xy = index;
 
     // Apply a random offset to random number index to decorrelate pixels
-    uint randSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, uniforms.frameIndex, 16);
-    float2 rndFloat2 = float2(nextRand(randSeed), nextRand(randSeed));
+    RandomSeed rnd = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, uniforms.frameIndex, 16);
 
-    xy += rndFloat2; // Add a random offset to the pixel coordinates for antialiasing
+    xy += rnd.random.xy; // Add a random offset to the pixel coordinates for antialiasing
     xy += 0.5f; // center in the middle of the pixel.
 
     float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
@@ -218,15 +217,14 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
     if (materialID == MATERIAL_DEFAULT)
     {
         // Initialize a random number generator
-        uint randSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, uniforms.frameIndex, 16);
-
+        RandomSeed rndSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, uniforms.frameIndex, 16);
+        
         // Get random numbers (in polar coordinates), convert to random cartesian uv on the lens
-        float2 rndFloat2 = float2(nextRand(randSeed), nextRand(randSeed));
-        float2 rnd = float2(2.0f * 3.14159265f * rndFloat2.x, rndFloat2.y);
+        float2 rnd = float2(2.0f * 3.14159265f * rndSeed.random.x, rndSeed.random.y);
         float2 rndUV = float2(cos(rnd.x) * rnd.y, sin(rnd.x) * rnd.y);
 
         // Apply a random offset to random number index to decorrelate pixels
-        uint offset = randSeed;
+        uint offset = rndSeed.seed;
         float2 r = float2(halton(offset + uniforms.frameIndex, 0), halton(offset + uniforms.frameIndex, 1));
 
         LightSample light;

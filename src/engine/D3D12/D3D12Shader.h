@@ -12,9 +12,11 @@
 
 #include <atlbase.h>
 #include <wrl.h>
-using Microsoft::WRL::ComPtr;
 
+using Microsoft::WRL::ComPtr;
 #include <dxcapi.h>
+
+using namespace toyraygun;
 
 class D3D12Shader : public toyraygun::Shader
 {
@@ -28,7 +30,7 @@ protected:
 public:
     D3D12Shader();
 
-    virtual bool compile(std::string entryPoint = "");
+    virtual bool compile(ShaderType type);
 
     virtual void* getBufferPointer();
     virtual size_t getBufferSize();

@@ -27,7 +27,7 @@ int main (int argc, char *args[])
         rtShader->addFunction("shadowHit", ShaderFunctionType::ShadowHit);
         rtShader->addFunction("shadowMiss", ShaderFunctionType::ShadowMiss);
 
-        if (!rtShader->compile())
+        if (!rtShader->compile(ShaderType::Raytrace))
         {
             std::cout << "Failed to compile Raytracing shader." << std::endl;
             return -1;
@@ -40,9 +40,9 @@ int main (int argc, char *args[])
     Shader* accumulateShader = Engine::createShader();
     if (accumulateShader->load("Accumulate"))
     {
-        accumulateShader->addFunction("accumulate", ShaderFunctionType::Accumulate);
+        accumulateShader->addFunction("main", ShaderFunctionType::Compute);
 
-        if (!accumulateShader->compile("main"))
+        if (!accumulateShader->compile(ShaderType::Compute))
         {
             std::cout << "Failed to compile Accumulate shader." << std::endl;
             //return -1;
@@ -55,9 +55,9 @@ int main (int argc, char *args[])
     Shader* postProcessingShader = Engine::createShader();
     if (postProcessingShader->load("PostProcessing"))
     {
-        postProcessingShader->addFunction("postprocessing", ShaderFunctionType::PostProcessing);
+        postProcessingShader->addFunction("main", ShaderFunctionType::Compute);
 
-        if (!postProcessingShader->compile("main"))
+        if (!postProcessingShader->compile(ShaderType::Compute))
         {
             std::cout << "Failed to compile PostProcessing shader." << std::endl;
             //return -1;

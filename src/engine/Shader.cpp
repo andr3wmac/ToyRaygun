@@ -148,7 +148,7 @@ std::wstring Shader::getFunctionW(ShaderFunctionType functionType)
     return L"";
 }
 
-bool Shader::compile(std::string entryPoint)
+bool Shader::compile(ShaderType type)
 {
     return false;
 }
