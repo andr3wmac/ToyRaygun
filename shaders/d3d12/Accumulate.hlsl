@@ -5,8 +5,11 @@
 
 #include "shaders/common.h"
 
-RWTexture2D<float4> InputTexture : register(u0);
-RWTexture2D<float4> AccumulateTexture : register(u1);
+RWTexture2D<float4> InputTexture : register(u1);
+RWTexture2D<float4> AccumulateTexture : register(u2);
+
+Texture2D RandomTexture : register(t0);
+SamplerState WrapSampler : register(s0);
 
 ConstantBuffer<Uniforms> uniforms : register(b0);
 
@@ -28,5 +31,10 @@ void accumulate(uint3 idx : SV_DispatchThreadID)
         color /= (uniforms.frameIndex + 1);
     }
 
-	AccumulateTexture[idx.xy] = float4(color, 1.0f);
+    float u = idx.x / 128.0;
+    float v = idx.y / 128.0;
+
+    float3 rand = RandomTexture.SampleLevel(WrapSampler, float2(u, v), 0).rgb;
+
+	AccumulateTexture[idx.xy] = float4(rand, 1.0f);
 }

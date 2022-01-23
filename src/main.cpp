@@ -16,7 +16,7 @@ using namespace toyraygun;
 int main (int argc, char *args[])
 {
     // Uncomment to load PIX debugging DLL.
-    // Engine::initPIXDebugger();
+    Engine::initPIXDebugger();
 
     Engine* engine = Engine::instance();
     engine->init(1024, 768);

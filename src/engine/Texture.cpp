@@ -10,6 +10,9 @@ using namespace toyraygun;
 #include <iostream>
 #include <bx/math.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 Texture Texture::generateRandomTexture(int width, int height)
 {
     Texture randomTexture;
@@ -19,7 +22,7 @@ Texture Texture::generateRandomTexture(int width, int height)
     
     for (int i = 0; i < (width * height * 4); i++)
     {
-        randomValues[i] = rand() % (1024 * 1024);
+        randomValues[i] = rand() % (width * height);
     }
     
     return randomTexture;
@@ -31,6 +34,17 @@ void Texture::init(int width, int height, int channels)
     m_width = width;
     m_height = height;
     m_channels = channels;
+}
+
+bool Texture::loadFile(std::string path)
+{
+    m_data = stbi_load(path.c_str(), &m_width, &m_height, &m_channels, 0);
+    if (m_data == NULL)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 void Texture::destroy()

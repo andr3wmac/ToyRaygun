@@ -50,7 +50,8 @@ project "ToyRaygun"
     }
 
     includedirs {
-        SRC_DIR
+        SRC_DIR,
+        path.join(LIB_DIR, "stb/include/")  
     }
 
     files { 

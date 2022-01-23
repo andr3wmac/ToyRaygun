@@ -43,7 +43,7 @@ bool D3D12Renderer::init()
     m_device->SetWindow(GetActiveWindow(), m_width, m_height);
     m_device->InitializeDXGIAdapter();
 
-    if (!IsDirectXRaytracingSupported(m_device->GetAdapter()))
+    if (!m_device->IsRaytracingSupported())
     {
         OutputDebugString("ERROR: DirectX Raytracing is not supported by your OS, GPU and/or driver.");
         return false;
@@ -106,7 +106,7 @@ void D3D12Renderer::loadScene(toyraygun::Scene* scene)
     CreateDescriptorHeap();
 
     // Load random tex
-    //createRandomTexture();
+    createRandomTexture();
 
     // Build geometry to be used in the sample.
     BuildGeometry(scene);
@@ -270,7 +270,7 @@ void D3D12Renderer::CreateDescriptorHeap()
     // 4 - random texture
     // 5 - accumulate texture
     // 6 - post processing texture
-    descriptorHeapDesc.NumDescriptors = 10; 
+    descriptorHeapDesc.NumDescriptors = 12; 
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     descriptorHeapDesc.NodeMask = 0;
@@ -654,11 +654,14 @@ void D3D12Renderer::createRandomTexture()
     auto backbufferFormat = m_device->GetBackBufferFormat();
     auto commandAllocator = m_device->GetCommandAllocator();
 
-    // Reset the command list for the acceleration structure construction.
+    // Reset the command list for the random texture construction.
     commandList->Reset(commandAllocator, nullptr);
 
+    toyraygun::Texture blueNoiseTex;
+    blueNoiseTex.loadFile("C:/Users/Andrew/Documents/ST Blue Noise/stbn_vec3_2Dx1D_128x128x64_62.png");
+
     // Create the output resource. The dimensions and format should match the swap-chain.
-    auto uavDesc = CD3DX12_RESOURCE_DESC::Tex2D(backbufferFormat, m_width, m_height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    auto uavDesc = CD3DX12_RESOURCE_DESC::Tex2D(backbufferFormat, blueNoiseTex.getWidth(), blueNoiseTex.getHeight(), 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
     auto defaultHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
     ThrowIfFailed(device->CreateCommittedResource(
@@ -667,21 +670,15 @@ void D3D12Renderer::createRandomTexture()
         &uavDesc, 
         D3D12_RESOURCE_STATE_COPY_DEST,
         nullptr, 
-        IID_PPV_ARGS(&m_randomTexture)));
-    NAME_D3D12_OBJECT(m_randomTexture);
+        IID_PPV_ARGS(&m_randomTexture.resource)));
+    NAME_D3D12_OBJECT(m_randomTexture.resource);
+
+
 
     // Generate Random Texture
-    toyraygun::Texture randomTextureData;
-    randomTextureData.init(m_width, m_height, 4);
-    uint8_t* textureData = randomTextureData.getBufferPointer();
-    for (int i = 0; i < (m_width * m_height * 4); ++i)
-    {
-        textureData[i] = 255;
-    }
-
     {
         const UINT subresourceCount = uavDesc.DepthOrArraySize * uavDesc.MipLevels;
-        UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_randomTexture.Get(), 0, subresourceCount);
+        UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_randomTexture.resource.Get(), 0, subresourceCount);
         ThrowIfFailed(device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
             D3D12_HEAP_FLAG_NONE,
@@ -693,20 +690,31 @@ void D3D12Renderer::createRandomTexture()
         // Copy data to the intermediate upload heap and then schedule a copy 
         // from the upload heap to the Texture2D.
         D3D12_SUBRESOURCE_DATA textureData = {};
-        textureData.pData = randomTextureData.getBufferPointer();
-        textureData.RowPitch = randomTextureData.getBufferStride();
-        textureData.SlicePitch = randomTextureData.getBufferSize();
+        textureData.pData = blueNoiseTex.getBufferPointer();
+        textureData.RowPitch = blueNoiseTex.getBufferStride();
+        textureData.SlicePitch = blueNoiseTex.getBufferSize();
 
-        UpdateSubresources(commandList, m_randomTexture.Get(), m_randomTextureUpload.Get(), 0, 0, subresourceCount, &textureData);
-        commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_randomTexture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+        UpdateSubresources(commandList, m_randomTexture.resource.Get(), m_randomTextureUpload.Get(), 0, 0, subresourceCount, &textureData);
+        commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_randomTexture.resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
     }
 
     D3D12_CPU_DESCRIPTOR_HANDLE uavDescriptorHandle;
-    m_randomTextureUAVDescriptorHeapIndex = AllocateDescriptor(&uavDescriptorHandle, m_randomTextureUAVDescriptorHeapIndex);
+    m_randomTexture.uavHeapIndex = AllocateDescriptor(&uavDescriptorHandle, m_randomTexture.uavHeapIndex);
     D3D12_UNORDERED_ACCESS_VIEW_DESC UAVDesc = {};
     UAVDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-    device->CreateUnorderedAccessView(m_randomTexture.Get(), nullptr, &UAVDesc, uavDescriptorHandle);
-    m_randomTextureUAVGpuDescriptor = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_descriptorHeap->GetGPUDescriptorHandleForHeapStart(), m_randomTextureUAVDescriptorHeapIndex, m_descriptorSize);
+    device->CreateUnorderedAccessView(m_randomTexture.resource.Get(), nullptr, &UAVDesc, uavDescriptorHandle);
+    m_randomTexture.uavGPUHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_descriptorHeap->GetGPUDescriptorHandleForHeapStart(), m_randomTexture.uavHeapIndex, m_descriptorSize);
+
+    // Describe and create a SRV for the texture.
+    D3D12_CPU_DESCRIPTOR_HANDLE srvDescriptorHandle;
+    m_randomTexture.srvHeapIndex = AllocateDescriptor(&srvDescriptorHandle, m_randomTexture.srvHeapIndex);
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.Format = backbufferFormat;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = 1;
+    device->CreateShaderResourceView(m_randomTexture.resource.Get(), &srvDesc, srvDescriptorHandle);
+    m_randomTexture.srvGPUHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_descriptorHeap->GetGPUDescriptorHandleForHeapStart(), m_randomTexture.srvHeapIndex, m_descriptorSize);
 
     // Kick off acceleration structure construction.
     m_device->ExecuteCommandList();
@@ -879,16 +887,33 @@ void D3D12Renderer::createAccumulatePipeline()
 
     // Accumulate Root Signature
     {
-        CD3DX12_DESCRIPTOR_RANGE ranges[2]; // Perfomance TIP: Order from most frequent to least frequent.
-        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);  // output texture
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);  // accumulate texture
+        CD3DX12_DESCRIPTOR_RANGE ranges[3]; // Perfomance TIP: Order from most frequent to least frequent.
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);  // random texture
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);  // output texture
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2);  // accumulate texture
 
-        CD3DX12_ROOT_PARAMETER rootParameters[3];
+        CD3DX12_ROOT_PARAMETER rootParameters[4];
         rootParameters[0].InitAsDescriptorTable(1, &ranges[0]);
         rootParameters[1].InitAsDescriptorTable(1, &ranges[1]);
-        rootParameters[2].InitAsConstantBufferView(0);
+        rootParameters[2].InitAsDescriptorTable(1, &ranges[2]);
+        rootParameters[3].InitAsConstantBufferView(0);
 
-        CD3DX12_ROOT_SIGNATURE_DESC accumRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
+        D3D12_STATIC_SAMPLER_DESC sampler = {};
+        sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+        sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        sampler.MipLODBias = 0;
+        sampler.MaxAnisotropy = 0;
+        sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+        sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+        sampler.MinLOD = 0.0f;
+        sampler.MaxLOD = D3D12_FLOAT32_MAX;
+        sampler.ShaderRegister = 0;
+        sampler.RegisterSpace = 0;
+        sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+        CD3DX12_ROOT_SIGNATURE_DESC accumRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters, 1, &sampler);
         SerializeAndCreateRootSignature(accumRootSignatureDesc, &m_accumulateRootSignature);
     }
 
@@ -919,13 +944,14 @@ void D3D12Renderer::performAccumulate()
     commandList->SetComputeRootSignature(m_accumulateRootSignature.Get());
 
     commandList->SetDescriptorHeaps(1, m_descriptorHeap.GetAddressOf());
-    commandList->SetComputeRootDescriptorTable(0, m_raytracingOutput.uavGPUHandle);
-    commandList->SetComputeRootDescriptorTable(1, m_accumulateOutput.uavGPUHandle);
+    commandList->SetComputeRootDescriptorTable(0, m_randomTexture.srvGPUHandle);
+    commandList->SetComputeRootDescriptorTable(1, m_raytracingOutput.uavGPUHandle);
+    commandList->SetComputeRootDescriptorTable(2, m_accumulateOutput.uavGPUHandle);
 
     // Copy the updated scene constant buffer to GPU.
     memcpy(&m_mappedConstantData[bufferIndex].constants, &m_sceneCB[bufferIndex], sizeof(m_sceneCB[bufferIndex]));
     auto cbGpuAddress = m_perFrameConstants->GetGPUVirtualAddress() + bufferIndex * sizeof(m_mappedConstantData[0]);
-    commandList->SetComputeRootConstantBufferView(2, cbGpuAddress);
+    commandList->SetComputeRootConstantBufferView(3, cbGpuAddress);
 
     commandList->Dispatch(m_width, m_height, 1);
 }

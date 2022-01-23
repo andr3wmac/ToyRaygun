@@ -112,10 +112,8 @@ private:
     ComPtr<ID3D12Resource> m_topLevelAccelerationStructure;
 
     // Raytracing input
-    ComPtr<ID3D12Resource> m_randomTexture;
+    D3D12Texture m_randomTexture;
     ComPtr<ID3D12Resource> m_randomTextureUpload;
-    D3D12_GPU_DESCRIPTOR_HANDLE m_randomTextureUAVGpuDescriptor;
-    UINT m_randomTextureUAVDescriptorHeapIndex;
 
     // Raytracing output
     D3D12Texture m_raytracingOutput;
