@@ -13,19 +13,19 @@ A fun project to explore the differences between DirectX 12, Metal, and Vulkan r
 - Cornell Box scene
 - SDL2 window and input
 - Direct lighting with shadows
-- Multi-bounce lighting on Metal
+- Multi-bounce lighting
 
 # To Be Completed
 
 - Vulkan
 - Linux
-- Multi-bounce lighting on all APIs
 - OBJ and Texture support
 
 # Dependencies
 
 - [bx](https://github.com/bkaradzic/bx) as base library for math, etc.
 - [SDL2](https://www.libsdl.org/) for windowing and input.
+- [stb](https://github.com/nothings/stb) for image I/O.
 
 # Screenshots
 
