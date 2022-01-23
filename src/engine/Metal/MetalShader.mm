@@ -12,7 +12,7 @@ using namespace toyraygun;
 
 #import "MetalRenderer.h"
 
-bool MetalShader::compile(std::string entryPoint)
+bool MetalShader::compile(ShaderType type)
 {
     Engine* engine = Engine::instance();
     

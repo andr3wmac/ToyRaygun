@@ -16,7 +16,7 @@ namespace toyraygun
         void* m_compiledLibrary;
         
     public:
-        virtual bool compile(std::string entryPoint);
+        virtual bool compile(ShaderType type);
         virtual void* getCompiledShader();
     };
 }
