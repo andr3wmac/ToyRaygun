@@ -13,16 +13,16 @@ using namespace toyraygun;
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-Texture Texture::generateRandomTexture(int width, int height)
+Texture Texture::generateRandomTexture(int width, int height, int channels)
 {
     Texture randomTexture;
-    randomTexture.init(width, height, 4);
+    randomTexture.init(width, height, channels);
     
     uint8_t* randomValues = randomTexture.getBufferPointer();
     
-    for (int i = 0; i < (width * height * 4); i++)
+    for (int i = 0; i < (width * height * channels); i++)
     {
-        randomValues[i] = rand() % (width * height);
+        randomValues[i] = rand() % (1024 * 1024);
     }
     
     return randomTexture;

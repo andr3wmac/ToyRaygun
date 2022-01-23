@@ -622,11 +622,10 @@ void D3D12Renderer::createRandomTexture()
     // Reset the command list for the random texture construction.
     commandList->Reset(commandAllocator, nullptr);
 
-    toyraygun::Texture blueNoiseTex;
-    blueNoiseTex.loadFile("textures/stbn_vec3_2Dx1D_128x128x64_0.png");
+    toyraygun::Texture randomTex = Texture::generateRandomTexture(m_width, m_height, 1);
 
     // Create the output resource. The dimensions and format should match the swap-chain.
-    auto uavDesc = CD3DX12_RESOURCE_DESC::Tex2D(backbufferFormat, blueNoiseTex.getWidth(), blueNoiseTex.getHeight(), 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    auto uavDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R32_UINT, randomTex.getWidth(), randomTex.getHeight(), 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
     auto defaultHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
     ThrowIfFailed(device->CreateCommittedResource(
@@ -653,9 +652,9 @@ void D3D12Renderer::createRandomTexture()
         // Copy data to the intermediate upload heap and then schedule a copy 
         // from the upload heap to the Texture2D.
         D3D12_SUBRESOURCE_DATA textureData = {};
-        textureData.pData = blueNoiseTex.getBufferPointer();
-        textureData.RowPitch = blueNoiseTex.getBufferStride();
-        textureData.SlicePitch = blueNoiseTex.getBufferSize();
+        textureData.pData = randomTex.getBufferPointer();
+        textureData.RowPitch = randomTex.getBufferStride();
+        textureData.SlicePitch = randomTex.getBufferSize();
 
         UpdateSubresources(commandList, m_randomTexture.resource.Get(), m_randomTextureUpload.Get(), 0, 0, subresourceCount, &textureData);
         commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_randomTexture.resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
@@ -669,15 +668,15 @@ void D3D12Renderer::createRandomTexture()
     m_randomTexture.uavGPUHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_descriptorHeap->GetGPUDescriptorHandleForHeapStart(), m_randomTexture.uavHeapIndex, m_descriptorSize);
 
     // Describe and create a SRV for the texture.
-    D3D12_CPU_DESCRIPTOR_HANDLE srvDescriptorHandle;
+    /*D3D12_CPU_DESCRIPTOR_HANDLE srvDescriptorHandle;
     m_randomTexture.srvHeapIndex = AllocateDescriptor(&srvDescriptorHandle, m_randomTexture.srvHeapIndex);
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc.Format = backbufferFormat;
+    srvDesc.Format = DXGI_FORMAT_R32_UINT;
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Texture2D.MipLevels = 1;
     device->CreateShaderResourceView(m_randomTexture.resource.Get(), &srvDesc, srvDescriptorHandle);
-    m_randomTexture.srvGPUHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_descriptorHeap->GetGPUDescriptorHandleForHeapStart(), m_randomTexture.srvHeapIndex, m_descriptorSize);
+    m_randomTexture.srvGPUHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_descriptorHeap->GetGPUDescriptorHandleForHeapStart(), m_randomTexture.srvHeapIndex, m_descriptorSize);*/
 
     // Kick off acceleration structure construction.
     m_device->ExecuteCommandList();
@@ -698,7 +697,7 @@ void D3D12Renderer::createRaytracingPipeline()
     {
         CD3DX12_DESCRIPTOR_RANGE ranges[5]; // Perfomance TIP: Order from most frequent to least frequent.
         ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);  // Output
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);  // Random Texture
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2);  // Random Texture
         ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);  // Index
         ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);  // Vertex
         ranges[4].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5);  // MaterialIDs
@@ -712,23 +711,7 @@ void D3D12Renderer::createRaytracingPipeline()
         rootParameters[5].InitAsDescriptorTable(1, &ranges[3]); // Vertex
         rootParameters[6].InitAsDescriptorTable(1, &ranges[4]); // MaterialIDs
 
-        // Sampler for random texture.
-        D3D12_STATIC_SAMPLER_DESC sampler = {};
-        sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-        sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        sampler.MipLODBias = 0;
-        sampler.MaxAnisotropy = 0;
-        sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-        sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-        sampler.MinLOD = 0.0f;
-        sampler.MaxLOD = D3D12_FLOAT32_MAX;
-        sampler.ShaderRegister = 2;
-        sampler.RegisterSpace = 0;
-        sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-        CD3DX12_ROOT_SIGNATURE_DESC globalRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters, 1, &sampler);
+        CD3DX12_ROOT_SIGNATURE_DESC globalRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
         SerializeAndCreateRootSignature(globalRootSignatureDesc, &m_raytracingGlobalRootSignature);
     }
 
@@ -860,7 +843,7 @@ void D3D12Renderer::performRaytracing()
     commandList->SetComputeRootDescriptorTable(0, m_raytracingOutput.uavGPUHandle);
     commandList->SetComputeRootShaderResourceView(1, m_topLevelAccelerationStructure->GetGPUVirtualAddress());
     commandList->SetComputeRootConstantBufferView(2, cbGpuAddress);
-    commandList->SetComputeRootDescriptorTable(3, m_randomTexture.srvGPUHandle);
+    commandList->SetComputeRootDescriptorTable(3, m_randomTexture.uavGPUHandle);
     commandList->SetComputeRootDescriptorTable(4, m_indexBuffer.gpuDescriptorHandle);
     commandList->SetComputeRootDescriptorTable(5, m_vertexBuffer.gpuDescriptorHandle);
     commandList->SetComputeRootDescriptorTable(6, m_materialIDBuffer.gpuDescriptorHandle);
@@ -893,16 +876,14 @@ void D3D12Renderer::createAccumulatePipeline()
 
     // Accumulate Root Signature
     {
-        CD3DX12_DESCRIPTOR_RANGE ranges[3]; // Perfomance TIP: Order from most frequent to least frequent.
-        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);  // random texture
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);  // output texture
-        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2);  // accumulate texture
+        CD3DX12_DESCRIPTOR_RANGE ranges[2]; // Perfomance TIP: Order from most frequent to least frequent.
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);  // output texture
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);  // accumulate texture
 
-        CD3DX12_ROOT_PARAMETER rootParameters[4];
+        CD3DX12_ROOT_PARAMETER rootParameters[3];
         rootParameters[0].InitAsDescriptorTable(1, &ranges[0]);
         rootParameters[1].InitAsDescriptorTable(1, &ranges[1]);
-        rootParameters[2].InitAsDescriptorTable(1, &ranges[2]);
-        rootParameters[3].InitAsConstantBufferView(0);
+        rootParameters[2].InitAsConstantBufferView(0);
 
         CD3DX12_ROOT_SIGNATURE_DESC accumRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
         SerializeAndCreateRootSignature(accumRootSignatureDesc, &m_accumulateRootSignature);
@@ -935,14 +916,13 @@ void D3D12Renderer::performAccumulate()
     commandList->SetComputeRootSignature(m_accumulateRootSignature.Get());
 
     commandList->SetDescriptorHeaps(1, m_descriptorHeap.GetAddressOf());
-    commandList->SetComputeRootDescriptorTable(0, m_randomTexture.srvGPUHandle);
-    commandList->SetComputeRootDescriptorTable(1, m_raytracingOutput.uavGPUHandle);
-    commandList->SetComputeRootDescriptorTable(2, m_accumulateOutput.uavGPUHandle);
+    commandList->SetComputeRootDescriptorTable(0, m_raytracingOutput.uavGPUHandle);
+    commandList->SetComputeRootDescriptorTable(1, m_accumulateOutput.uavGPUHandle);
 
     // Copy the updated scene constant buffer to GPU.
     memcpy(&m_mappedConstantData[bufferIndex].constants, &m_sceneCB[bufferIndex], sizeof(m_sceneCB[bufferIndex]));
     auto cbGpuAddress = m_perFrameConstants->GetGPUVirtualAddress() + bufferIndex * sizeof(m_mappedConstantData[0]);
-    commandList->SetComputeRootConstantBufferView(3, cbGpuAddress);
+    commandList->SetComputeRootConstantBufferView(2, cbGpuAddress);
 
     commandList->Dispatch(m_width, m_height, 1);
 }

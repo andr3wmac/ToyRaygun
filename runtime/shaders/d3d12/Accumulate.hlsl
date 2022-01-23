@@ -5,8 +5,8 @@
 
 #include "shaders/common.h"
 
-RWTexture2D<float4> InputTexture : register(u1);
-RWTexture2D<float4> AccumulateTexture : register(u2);
+RWTexture2D<float4> InputTexture : register(u0);
+RWTexture2D<float4> AccumulateTexture : register(u1);
 
 ConstantBuffer<Uniforms> uniforms : register(b0);
 
