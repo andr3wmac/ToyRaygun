@@ -43,7 +43,7 @@ bool D3D12Renderer::init()
     m_device->SetWindow(GetActiveWindow(), m_width, m_height);
     m_device->InitializeDXGIAdapter();
 
-    if (!IsDirectXRaytracingSupported(m_device->GetAdapter()))
+    if (!m_device->IsRaytracingSupported())
     {
         OutputDebugString("ERROR: DirectX Raytracing is not supported by your OS, GPU and/or driver.");
         return false;
@@ -96,9 +96,6 @@ void D3D12Renderer::loadScene(toyraygun::Scene* scene)
     // Create raytracing interfaces: raytracing device and commandlist.
     CreateRaytracingInterfaces();
 
-    // Create root signatures for the shaders.
-    CreateRootSignatures();
-
     // Create a raytracing pipeline state object which defines the binding of shaders, state and resources to be used during raytracing.
     createRaytracingPipeline();
 
@@ -106,7 +103,7 @@ void D3D12Renderer::loadScene(toyraygun::Scene* scene)
     CreateDescriptorHeap();
 
     // Load random tex
-    //createRandomTexture();
+    createRandomTexture();
 
     // Build geometry to be used in the sample.
     BuildGeometry(scene);
@@ -163,38 +160,6 @@ void D3D12Renderer::SerializeAndCreateRootSignature(D3D12_ROOT_SIGNATURE_DESC& d
 
     ThrowIfFailed(D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &blob, &error), error ? static_cast<char*>(error->GetBufferPointer()) : nullptr);
     ThrowIfFailed(device->CreateRootSignature(1, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&(*rootSig))));
-}
-
-void D3D12Renderer::CreateRootSignatures()
-{
-    auto device = m_device->GetD3DDevice();
-
-    // Global Root Signature
-    // This is a root signature that is shared across all raytracing shaders invoked during a DispatchRays() call.
-    {
-        CD3DX12_DESCRIPTOR_RANGE ranges[5]; // Perfomance TIP: Order from most frequent to least frequent.
-        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);  // output texture
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);  // random texture
-        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);  // index buffer
-        ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);  // vertex buffer
-        ranges[4].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);  // material id buffer
-
-        CD3DX12_ROOT_PARAMETER rootParameters[GlobalRootSignatureParams::Count];
-
-        rootParameters[GlobalRootSignatureParams::AccelerationStructureSlot].InitAsShaderResourceView(0);
-        rootParameters[GlobalRootSignatureParams::SceneConstantSlot].InitAsConstantBufferView(0);
-
-        rootParameters[GlobalRootSignatureParams::OutputViewSlot].InitAsDescriptorTable(1, &ranges[0]);
-        rootParameters[GlobalRootSignatureParams::RandomTextureSlot].InitAsDescriptorTable(1, &ranges[1]);
-        rootParameters[GlobalRootSignatureParams::IndexBuffersSlot].InitAsDescriptorTable(1, &ranges[2]);
-        rootParameters[GlobalRootSignatureParams::VertexBuffersSlot].InitAsDescriptorTable(1, &ranges[3]);
-        rootParameters[GlobalRootSignatureParams::MaterialIDBufferSlot].InitAsDescriptorTable(1, &ranges[4]);
-        
-        CD3DX12_ROOT_SIGNATURE_DESC globalRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
-        SerializeAndCreateRootSignature(globalRootSignatureDesc, &m_raytracingGlobalRootSignature);
-    }
-
-    // Local Root Signature would go here but not currently in use.
 }
 
 // Create raytracing device and command list.
@@ -270,7 +235,7 @@ void D3D12Renderer::CreateDescriptorHeap()
     // 4 - random texture
     // 5 - accumulate texture
     // 6 - post processing texture
-    descriptorHeapDesc.NumDescriptors = 10; 
+    descriptorHeapDesc.NumDescriptors = 12; 
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     descriptorHeapDesc.NodeMask = 0;
@@ -654,11 +619,13 @@ void D3D12Renderer::createRandomTexture()
     auto backbufferFormat = m_device->GetBackBufferFormat();
     auto commandAllocator = m_device->GetCommandAllocator();
 
-    // Reset the command list for the acceleration structure construction.
+    // Reset the command list for the random texture construction.
     commandList->Reset(commandAllocator, nullptr);
 
+    toyraygun::Texture randomTex = Texture::generateRandomTexture(m_width, m_height, 4);
+
     // Create the output resource. The dimensions and format should match the swap-chain.
-    auto uavDesc = CD3DX12_RESOURCE_DESC::Tex2D(backbufferFormat, m_width, m_height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    auto uavDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R32_UINT, randomTex.getWidth(), randomTex.getHeight(), 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
     auto defaultHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
     ThrowIfFailed(device->CreateCommittedResource(
@@ -667,21 +634,13 @@ void D3D12Renderer::createRandomTexture()
         &uavDesc, 
         D3D12_RESOURCE_STATE_COPY_DEST,
         nullptr, 
-        IID_PPV_ARGS(&m_randomTexture)));
-    NAME_D3D12_OBJECT(m_randomTexture);
+        IID_PPV_ARGS(&m_randomTexture.resource)));
+    NAME_D3D12_OBJECT(m_randomTexture.resource);
 
     // Generate Random Texture
-    toyraygun::Texture randomTextureData;
-    randomTextureData.init(m_width, m_height, 4);
-    uint8_t* textureData = randomTextureData.getBufferPointer();
-    for (int i = 0; i < (m_width * m_height * 4); ++i)
-    {
-        textureData[i] = 255;
-    }
-
     {
         const UINT subresourceCount = uavDesc.DepthOrArraySize * uavDesc.MipLevels;
-        UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_randomTexture.Get(), 0, subresourceCount);
+        UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_randomTexture.resource.Get(), 0, subresourceCount);
         ThrowIfFailed(device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
             D3D12_HEAP_FLAG_NONE,
@@ -693,20 +652,31 @@ void D3D12Renderer::createRandomTexture()
         // Copy data to the intermediate upload heap and then schedule a copy 
         // from the upload heap to the Texture2D.
         D3D12_SUBRESOURCE_DATA textureData = {};
-        textureData.pData = randomTextureData.getBufferPointer();
-        textureData.RowPitch = randomTextureData.getBufferStride();
-        textureData.SlicePitch = randomTextureData.getBufferSize();
+        textureData.pData = randomTex.getBufferPointer();
+        textureData.RowPitch = randomTex.getBufferStride();
+        textureData.SlicePitch = randomTex.getBufferSize();
 
-        UpdateSubresources(commandList, m_randomTexture.Get(), m_randomTextureUpload.Get(), 0, 0, subresourceCount, &textureData);
-        commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_randomTexture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+        UpdateSubresources(commandList, m_randomTexture.resource.Get(), m_randomTextureUpload.Get(), 0, 0, subresourceCount, &textureData);
+        commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_randomTexture.resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
     }
 
     D3D12_CPU_DESCRIPTOR_HANDLE uavDescriptorHandle;
-    m_randomTextureUAVDescriptorHeapIndex = AllocateDescriptor(&uavDescriptorHandle, m_randomTextureUAVDescriptorHeapIndex);
+    m_randomTexture.uavHeapIndex = AllocateDescriptor(&uavDescriptorHandle, m_randomTexture.uavHeapIndex);
     D3D12_UNORDERED_ACCESS_VIEW_DESC UAVDesc = {};
     UAVDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-    device->CreateUnorderedAccessView(m_randomTexture.Get(), nullptr, &UAVDesc, uavDescriptorHandle);
-    m_randomTextureUAVGpuDescriptor = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_descriptorHeap->GetGPUDescriptorHandleForHeapStart(), m_randomTextureUAVDescriptorHeapIndex, m_descriptorSize);
+    device->CreateUnorderedAccessView(m_randomTexture.resource.Get(), nullptr, &UAVDesc, uavDescriptorHandle);
+    m_randomTexture.uavGPUHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_descriptorHeap->GetGPUDescriptorHandleForHeapStart(), m_randomTexture.uavHeapIndex, m_descriptorSize);
+
+    // Describe and create a SRV for the texture.
+    /*D3D12_CPU_DESCRIPTOR_HANDLE srvDescriptorHandle;
+    m_randomTexture.srvHeapIndex = AllocateDescriptor(&srvDescriptorHandle, m_randomTexture.srvHeapIndex);
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.Format = DXGI_FORMAT_R32_UINT;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = 1;
+    device->CreateShaderResourceView(m_randomTexture.resource.Get(), &srvDesc, srvDescriptorHandle);
+    m_randomTexture.srvGPUHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_descriptorHeap->GetGPUDescriptorHandleForHeapStart(), m_randomTexture.srvHeapIndex, m_descriptorSize);*/
 
     // Kick off acceleration structure construction.
     m_device->ExecuteCommandList();
@@ -720,6 +690,33 @@ void D3D12Renderer::createRandomTexture()
 // with all configuration options resolved, such as local signatures and other state.
 void D3D12Renderer::createRaytracingPipeline()
 {
+    auto device = m_device->GetD3DDevice();
+
+    // Global Root Signature
+    // This is a root signature that is shared across all raytracing shaders invoked during a DispatchRays() call.
+    {
+        CD3DX12_DESCRIPTOR_RANGE ranges[5]; // Perfomance TIP: Order from most frequent to least frequent.
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);  // Output
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2);  // Random Texture
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);  // Index
+        ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);  // Vertex
+        ranges[4].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5);  // MaterialIDs
+
+        CD3DX12_ROOT_PARAMETER rootParameters[7];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0]); // Output
+        rootParameters[1].InitAsShaderResourceView(0);          // Acceleration Structure
+        rootParameters[2].InitAsConstantBufferView(0);          // Uniforms
+        rootParameters[3].InitAsDescriptorTable(1, &ranges[1]); // Random Texture
+        rootParameters[4].InitAsDescriptorTable(1, &ranges[2]); // Index
+        rootParameters[5].InitAsDescriptorTable(1, &ranges[3]); // Vertex
+        rootParameters[6].InitAsDescriptorTable(1, &ranges[4]); // MaterialIDs
+
+        CD3DX12_ROOT_SIGNATURE_DESC globalRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
+        SerializeAndCreateRootSignature(globalRootSignatureDesc, &m_raytracingGlobalRootSignature);
+    }
+
+    // Local Root Signature would go here but not currently in use.
+
     /* Example of working RTPSO:
     --------------------------------------------------------------------
     | D3D12 State Object 0x000000ADFDCFE7C0: Raytracing Pipeline
@@ -838,18 +835,18 @@ void D3D12Renderer::performRaytracing()
     // Copy the updated scene constant buffer to GPU.
     memcpy(&m_mappedConstantData[bufferIndex].constants, &m_sceneCB[bufferIndex], sizeof(m_sceneCB[bufferIndex]));
     auto cbGpuAddress = m_perFrameConstants->GetGPUVirtualAddress() + bufferIndex * sizeof(m_mappedConstantData[0]);
-    commandList->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantSlot, cbGpuAddress);
 
     // Bind the heaps, acceleration structure and dispatch rays.
     commandList->SetDescriptorHeaps(1, m_descriptorHeap.GetAddressOf());
 
     // Set index and successive vertex buffer decriptor tables
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::IndexBuffersSlot,     m_indexBuffer.gpuDescriptorHandle);
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot,    m_vertexBuffer.gpuDescriptorHandle);
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::MaterialIDBufferSlot, m_materialIDBuffer.gpuDescriptorHandle);
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot,       m_raytracingOutput.uavGPUHandle);
-
-    commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, m_topLevelAccelerationStructure->GetGPUVirtualAddress());
+    commandList->SetComputeRootDescriptorTable(0, m_raytracingOutput.uavGPUHandle);
+    commandList->SetComputeRootShaderResourceView(1, m_topLevelAccelerationStructure->GetGPUVirtualAddress());
+    commandList->SetComputeRootConstantBufferView(2, cbGpuAddress);
+    commandList->SetComputeRootDescriptorTable(3, m_randomTexture.uavGPUHandle);
+    commandList->SetComputeRootDescriptorTable(4, m_indexBuffer.gpuDescriptorHandle);
+    commandList->SetComputeRootDescriptorTable(5, m_vertexBuffer.gpuDescriptorHandle);
+    commandList->SetComputeRootDescriptorTable(6, m_materialIDBuffer.gpuDescriptorHandle);
 
     // Since each shader table has only one shader record, the stride is same as the size.
     D3D12_DISPATCH_RAYS_DESC dispatchDesc = {};

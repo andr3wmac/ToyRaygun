@@ -325,7 +325,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // Halton sequence.
     _randomTexture = [_device newTextureWithDescriptor:renderTargetDescriptor];
     
-    toyraygun::Texture randomTex = toyraygun::Texture::generateRandomTexture(size.width, size.height);
+    toyraygun::Texture randomTex = toyraygun::Texture::generateRandomTexture(size.width, size.height, 4);
     
     [_randomTexture replaceRegion:MTLRegionMake2D(0, 0, size.width, size.height)
                       mipmapLevel:0

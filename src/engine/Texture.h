@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <bx/math.h>
+#include <string>
 
 namespace toyraygun
 {
@@ -20,9 +21,10 @@ namespace toyraygun
         int m_channels;
         
     public:
-        static Texture generateRandomTexture(int width, int height);
+        static Texture generateRandomTexture(int width, int height, int channels);
         
         virtual void init(int width, int height, int channels);
+        virtual bool loadFile(std::string path);
         virtual void destroy();
 
         virtual uint8_t* getBufferPointer();

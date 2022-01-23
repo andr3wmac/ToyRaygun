@@ -1,7 +1,7 @@
 local pkgconfig = require 'pkgconfig'
 
 local LIB_DIR = "lib/"
-local SHADERS_DIR = "shaders/"
+local RUNTIME_DIR = "runtime/"
 local SRC_DIR = "src/"
 
 solution "ToyRaygun"
@@ -38,7 +38,7 @@ project "ToyRaygun"
     characterset "ASCII"
     location ("build/" .. _ACTION)
 
-    debugdir "./"
+    debugdir (RUNTIME_DIR)
 
     defines {
         "_THREAD_SAFE",
@@ -50,7 +50,8 @@ project "ToyRaygun"
     }
 
     includedirs {
-        SRC_DIR
+        SRC_DIR,
+        path.join(LIB_DIR, "stb/include/")  
     }
 
     files { 
@@ -58,7 +59,7 @@ project "ToyRaygun"
         path.join(SRC_DIR, "*.h"),
         path.join(SRC_DIR, "engine/*.cpp"), 
         path.join(SRC_DIR, "engine/*.h"),
-        path.join(SHADERS_DIR, "**.h")
+        path.join(RUNTIME_DIR, "shaders/**.h")
     }
 
     filter "configurations:Debug*"
@@ -82,7 +83,7 @@ project "ToyRaygun"
         files {
             path.join(SRC_DIR, "engine/D3D12/**.cpp"),
             path.join(SRC_DIR, "engine/D3D12/**.h"),
-            path.join(SHADERS_DIR, "d3d12/**.hlsl")
+            path.join(RUNTIME_DIR, "shaders/d3d12/**.hlsl")
         }
 
         links { 
@@ -109,7 +110,7 @@ project "ToyRaygun"
         files {
             path.join(SRC_DIR, "engine/Metal/**.mm"),
             path.join(SRC_DIR, "engine/Metal/**.h"),
-            path.join(SHADERS_DIR, "metal/**.metal")
+            path.join(RUNTIME_DIR, "shaders/metal/**.metal")
         }
 
         libdirs { 
@@ -131,3 +132,8 @@ project "ToyRaygun"
     end
 
     filter {}
+
+    postbuildcommands {
+        "{COPYDIR} \"" .. path.getabsolute(path.join(RUNTIME_DIR, "shaders")) .. "\" \"%{cfg.buildtarget.directory}\"",
+        "{COPYDIR} \"" .. path.getabsolute(path.join(RUNTIME_DIR, "textures")) .. "\" \"%{cfg.buildtarget.directory}\""
+    }

@@ -158,46 +158,6 @@ inline LightSample sampleAreaLight(AreaLight light,
     return result;
 }
 
-// Generates a seed for a random number generator from 2 inputs plus a backoff
-struct RandomSeed
-{
-    uint seed;
-    float4 random;
-};
-
-RandomSeed nextRand(RandomSeed src)
-{
-    uint seed = (1664525u * src.seed + 1013904223u);
-    src.random.x = float(seed & 0x00FFFFFF) / float(0x01000000);
-
-    seed = (1664525u * seed + 1013904223u);
-    src.random.y = float(seed & 0x00FFFFFF) / float(0x01000000);
-
-    seed = (1664525u * seed + 1013904223u);
-    src.random.z = float(seed & 0x00FFFFFF) / float(0x01000000);
-
-    seed = (1664525u * seed + 1013904223u);
-    src.random.w = float(seed & 0x00FFFFFF) / float(0x01000000);
-
-    return src;
-}
-
-RandomSeed initRand(uint val0, uint val1, uint backoff = 16)
-{
-    uint v0 = val0, v1 = val1, s0 = 0;
-
-    for (uint n = 0; n < backoff; n++)
-    {
-        s0 += 0x9e3779b9;
-        v0 += ((v1 << 4) + 0xa341316c) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4);
-        v1 += ((v0 << 4) + 0xad90777d) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761e);
-    }
-
-    RandomSeed src;
-    src.seed = v0;
-    return nextRand(src);
-}
-
 // ACES tone mapping curve fit to go from HDR to LDR
 // https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
 float3 ACESFilm(float3 x)

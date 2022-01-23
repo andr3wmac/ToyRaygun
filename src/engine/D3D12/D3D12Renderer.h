@@ -27,26 +27,6 @@
 #include <wrl.h>
 using Microsoft::WRL::ComPtr;
 
-namespace GlobalRootSignatureParams {
-    enum Value {
-        OutputViewSlot = 0,
-        AccelerationStructureSlot,
-        SceneConstantSlot,
-        IndexBuffersSlot,
-        VertexBuffersSlot,
-        MaterialIDBufferSlot,
-        RandomTextureSlot,
-        Count 
-    };
-}
-
-namespace LocalRootSignatureParams {
-    enum Value {
-        CubeConstantSlot = 0,
-        Count 
-    };
-}
-
 class D3D12Renderer : public toyraygun::Renderer
 {
 public:
@@ -112,10 +92,8 @@ private:
     ComPtr<ID3D12Resource> m_topLevelAccelerationStructure;
 
     // Raytracing input
-    ComPtr<ID3D12Resource> m_randomTexture;
+    D3D12Texture m_randomTexture;
     ComPtr<ID3D12Resource> m_randomTextureUpload;
-    D3D12_GPU_DESCRIPTOR_HANDLE m_randomTextureUAVGpuDescriptor;
-    UINT m_randomTextureUAVDescriptorHeapIndex;
 
     // Raytracing output
     D3D12Texture m_raytracingOutput;
@@ -161,7 +139,6 @@ private:
     void ReleaseWindowSizeDependentResources();
     void CreateRaytracingInterfaces();
     void SerializeAndCreateRootSignature(D3D12_ROOT_SIGNATURE_DESC& desc, ComPtr<ID3D12RootSignature>* rootSig);
-    void CreateRootSignatures();
     void CreateLocalRootSignatureSubobjects(CD3DX12_STATE_OBJECT_DESC* raytracingPipeline);
     void CreateDescriptorHeap();
     void BuildGeometry(toyraygun::Scene* scene);

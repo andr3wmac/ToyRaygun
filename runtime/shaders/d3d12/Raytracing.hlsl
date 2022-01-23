@@ -18,12 +18,13 @@ struct Vertex
     float3 color;
 };
 
-RaytracingAccelerationStructure Scene : register(t0, space0);
+RaytracingAccelerationStructure Scene : register(t0);
 RWTexture2D<float4> RenderTarget : register(u0);
-//RWTexture2D<float4> RandomTexture : register(u1);
-ByteAddressBuffer Indices : register(t2, space0);
-StructuredBuffer<Vertex> Vertices : register(t3, space0);
-StructuredBuffer<uint> MaterialIDs : register(t4, space0);
+RWTexture2D<uint> RandomTexture : register(u2);
+
+ByteAddressBuffer Indices : register(t3);
+StructuredBuffer<Vertex> Vertices : register(t4);
+StructuredBuffer<uint> MaterialIDs : register(t5);
 
 ConstantBuffer<Uniforms> uniforms : register(b0);
 
@@ -89,21 +90,25 @@ float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttrib
 // Generate a ray in world space for a camera pixel corresponding to an index from the dispatched 2D grid.
 inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 direction)
 {
-    float2 xy = index;
+    float2 pixel = (float2)index;
 
     // Apply a random offset to random number index to decorrelate pixels
-    RandomSeed rnd = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, uniforms.frameIndex, 16);
+    uint offset = RandomTexture[DispatchRaysIndex().xy].x;
 
-    xy += rnd.random.xy; // Add a random offset to the pixel coordinates for antialiasing
-    xy += 0.5f; // center in the middle of the pixel.
+    // Add a random offset to the pixel coordinates for antialiasing
+    float2 r = float2(halton(offset + uniforms.frameIndex, 0),
+                      halton(offset + uniforms.frameIndex, 1));
 
-    float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
+    pixel += r;
+
+    float2 uv = pixel / DispatchRaysDimensions().xy;
+    uv = uv * 2.0f - 1.0f;
 
     // Invert Y for DirectX-style coordinates.
-    screenPos.y = -screenPos.y;
+    uv.y = -uv.y;
 
     // Unproject the pixel coordinate into a ray.
-    float4 world = mul(float4(screenPos, 0, 1), uniforms.camera.invViewProjMtx);
+    float4 world = mul(float4(uv, 0, 1), uniforms.camera.invViewProjMtx);
 
     world.xyz /= world.w;
     origin = uniforms.camera.position.xyz;
@@ -216,16 +221,11 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
     // Default
     if (materialID == MATERIAL_DEFAULT)
     {
-        // Initialize a random number generator
-        RandomSeed rndSeed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, uniforms.frameIndex, 16);
-        
-        // Get random numbers (in polar coordinates), convert to random cartesian uv on the lens
-        float2 rnd = float2(2.0f * 3.14159265f * rndSeed.random.x, rndSeed.random.y);
-        float2 rndUV = float2(cos(rnd.x) * rnd.y, sin(rnd.x) * rnd.y);
+        uint offset = RandomTexture[DispatchRaysIndex().xy].x;
 
         // Apply a random offset to random number index to decorrelate pixels
-        uint offset = rndSeed.seed;
-        float2 r = float2(halton(offset + uniforms.frameIndex, 0), halton(offset + uniforms.frameIndex, 1));
+        float2 r = float2(halton(uniforms.frameIndex, 0),
+                          halton(uniforms.frameIndex, 1));
 
         LightSample light;
         light = sampleAreaLight(uniforms.light, r, hitPosition, vertexNormal);
@@ -241,8 +241,11 @@ void primaryHit(inout RayPayload payload, in MyAttributes attr)
         bool shadowRayHit = traceShadowRay(shadowRay, payload.recursionDepth);
         float shadowFactor = shadowRayHit ? 0.0 : 1.0;
 
+        r = float2(halton(offset + uniforms.frameIndex, 2 + payload.recursionDepth * 4 + 2),
+                   halton(offset + uniforms.frameIndex, 2 + payload.recursionDepth * 4 + 3));
+
         // Trace Secondary Ray
-        float3 sampleDirection = sampleCosineWeightedHemisphere(rndUV);
+        float3 sampleDirection = sampleCosineWeightedHemisphere(r);
         sampleDirection = alignHemisphereWithNormal(sampleDirection, vertexNormal);
         sampleDirection = normalize(sampleDirection);
 

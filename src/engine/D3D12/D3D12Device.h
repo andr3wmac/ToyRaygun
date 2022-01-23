@@ -41,6 +41,7 @@ public:
     ~D3D12Device();
 
     void InitializeDXGIAdapter();
+    bool IsRaytracingSupported();
     void SetAdapterOverride(UINT adapterID) { m_adapterIDoverride = adapterID; }
     void CreateDeviceResources();
     void CreateWindowSizeDependentResources();
