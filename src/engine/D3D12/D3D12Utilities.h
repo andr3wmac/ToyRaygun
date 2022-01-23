@@ -128,11 +128,26 @@ struct D3D12Buffer
     D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle;
 };
 
-struct D3D12Texture
+class D3D12Texture
 {
+public:
     ComPtr<ID3D12Resource> resource;
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle;
-    UINT descriptorHeapIndex;
+    D3D12_GPU_DESCRIPTOR_HANDLE uavGPUHandle;
+    D3D12_GPU_DESCRIPTOR_HANDLE srvGPUHandle;
+    UINT uavHeapIndex;
+    UINT srvHeapIndex;
+
+    D3D12Texture() 
+    {
+        uavHeapIndex = UINT_MAX;
+        srvHeapIndex = UINT_MAX;
+    }
+
+    void Reset()
+    {
+        uavHeapIndex = UINT_MAX;
+        srvHeapIndex = UINT_MAX;
+    }
 };
 
 class GpuUploadBuffer

@@ -22,9 +22,7 @@ namespace toyraygun
     {
     protected:
         int m_frameIndex;
-        Shader* m_rtShader;
-        Shader* m_accumulateShader;
-        Shader* m_postProcessingShader;
+        std::vector<Shader*> m_shaders;
 
         // Viewport dimensions.
         int m_width;
@@ -52,14 +50,10 @@ namespace toyraygun
         bx::Vec3 getCameraPosition();
         void setCameraPosition(bx::Vec3 position);
         void setCameraLookAt(bx::Vec3 position);
-        void updateCamera();
+        void updateCamera(); 
 
-        virtual Shader* getRaytracingShader();
-        virtual void setRaytracingShader(Shader* shader);
-        virtual Shader* getAccumulateShader();
-        virtual void setAccumulateShader(Shader* shader);
-        virtual Shader* getPostProcessingShader();
-        virtual void setPostProcessingShader(Shader* shader);
+        virtual void addShader(Shader* shader);
+        virtual Shader* getShader(std::string path);
     };
 }
 

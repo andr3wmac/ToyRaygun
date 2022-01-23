@@ -9,6 +9,7 @@
 #include <dxgi1_4.h>
 #include <DirectXMath.h>
 #include <memory>
+#include <vector>
 
 #include <atlbase.h>
 #include <wrl.h>
@@ -25,14 +26,16 @@ protected:
     static CComPtr<IDxcCompiler> m_compiler;
 
     CComPtr<IDxcBlobEncoding> m_sourceBlob;
-    CComPtr<IDxcBlob> m_compiledBlob;
+    std::vector<CComPtr<IDxcBlob>> m_compiledBlobs;
+
+    bool compileBlob(int blobIndex, std::wstring sourceName, std::wstring entryPoint, std::wstring targetProfile);
 
 public:
     D3D12Shader();
 
     virtual bool compile(ShaderType type);
 
-    virtual void* getBufferPointer();
-    virtual size_t getBufferSize();
-    virtual void* getCompiledShader();
+    virtual void* getBufferPointer(ShaderFunctionType type = ShaderFunctionType::None);
+    virtual size_t getBufferSize(ShaderFunctionType type = ShaderFunctionType::None);
+    virtual void* getCompiledShader(ShaderFunctionType type = ShaderFunctionType::None);
 };

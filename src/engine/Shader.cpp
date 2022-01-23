@@ -24,6 +24,8 @@ std::vector<std::string> Shader::s_skipShaderIncludes
 
 bool Shader::load(std::string path, bool doPreprocess)
 {
+    m_path = path;
+
     char fullPath[256];
     snprintf(fullPath, 256, "%s/%s.%s", Engine::getRuntimeShaderPath().c_str(), path.c_str(), Engine::getRuntimeShaderExt().c_str());
 
@@ -158,17 +160,17 @@ std::string Shader::getSourceText()
     return m_sourceText.str();
 }
 
-void* Shader::getBufferPointer()
+void* Shader::getBufferPointer(ShaderFunctionType type)
 {
     return nullptr;
 }
 
-void* Shader::getCompiledShader()
+void* Shader::getCompiledShader(ShaderFunctionType type)
 {
     return nullptr;
 }
 
-size_t Shader::getBufferSize()
+size_t Shader::getBufferSize(ShaderFunctionType type)
 {
     return -1;
 }

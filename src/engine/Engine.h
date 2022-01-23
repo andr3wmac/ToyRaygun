@@ -38,6 +38,7 @@ namespace toyraygun
         
     public:
         static Engine* instance();
+        static void initPIXDebugger();
         
         static Shader* createShader();
         static Renderer* createRenderer();

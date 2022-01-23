@@ -54,6 +54,7 @@ namespace toyraygun
     public:
         static std::vector<std::string> s_skipShaderIncludes;
 
+        std::string m_path;
         std::string m_sourcePath;
         std::stringstream m_sourceText;
 
@@ -67,9 +68,9 @@ namespace toyraygun
         virtual std::wstring getFunctionW(ShaderFunctionType functionType);
 
         virtual std::string getSourceText();
-        virtual void* getBufferPointer();
-        virtual size_t getBufferSize();
-        virtual void* getCompiledShader();
+        virtual void* getBufferPointer(ShaderFunctionType type = ShaderFunctionType::None);
+        virtual size_t getBufferSize(ShaderFunctionType type = ShaderFunctionType::None);
+        virtual void* getCompiledShader(ShaderFunctionType type = ShaderFunctionType::None);
     };
 }
 

@@ -36,34 +36,22 @@ void Renderer::loadScene(Scene* scene)
 
 }
 
-Shader* Renderer::getRaytracingShader()
+void Renderer::addShader(Shader* shader)
 {
-    return m_rtShader;
+    m_shaders.push_back(shader);
 }
 
-void Renderer::setRaytracingShader(Shader* shader)
+Shader* Renderer::getShader(std::string path)
 {
-	m_rtShader = shader;
-}
+    for (int i = 0; i < m_shaders.size(); ++i)
+    {
+        if (m_shaders[i]->m_path == path)
+        {
+            return m_shaders[i];
+        }
+    }
 
-Shader* Renderer::getAccumulateShader()
-{
-    return m_accumulateShader;
-}
-
-void Renderer::setAccumulateShader(Shader* shader)
-{
-    m_accumulateShader = shader;
-}
-
-Shader* Renderer::getPostProcessingShader()
-{
-    return m_postProcessingShader;
-}
-
-void Renderer::setPostProcessingShader(Shader* shader)
-{
-    m_postProcessingShader = shader;
+    return nullptr;
 }
 
 void Renderer::renderFrame()

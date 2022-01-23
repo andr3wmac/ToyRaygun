@@ -15,6 +15,9 @@ using namespace toyraygun;
 
 int main (int argc, char *args[])
 {
+    // Uncomment to load PIX debugging DLL.
+    // Engine::initPIXDebugger();
+
     Engine* engine = Engine::instance();
     engine->init(1024, 768);
     
@@ -45,7 +48,7 @@ int main (int argc, char *args[])
         if (!accumulateShader->compile(ShaderType::Compute))
         {
             std::cout << "Failed to compile Accumulate shader." << std::endl;
-            //return -1;
+            return -1;
         }
     }
     else {
@@ -64,7 +67,7 @@ int main (int argc, char *args[])
         if (!postProcessingShader->compile(ShaderType::Graphics))
         {
             std::cout << "Failed to compile PostProcessing shader." << std::endl;
-            //return -1;
+            return -1;
         }
     }
     else {
@@ -77,9 +80,11 @@ int main (int argc, char *args[])
         std::cout << "Renderer failed to initialize." << std::endl;
         return -1;
     }
-    renderer->setRaytracingShader(rtShader);
-    renderer->setAccumulateShader(accumulateShader);
-    renderer->setPostProcessingShader(postProcessingShader);
+
+    renderer->addShader(rtShader);
+    renderer->addShader(accumulateShader);
+    renderer->addShader(postProcessingShader);
+
     renderer->setCameraPosition(bx::Vec3(0.0f, 1.0f, 3.38f));
     renderer->setCameraLookAt(bx::Vec3(0.0f, 1.0f, -1.0f));
 

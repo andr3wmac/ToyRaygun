@@ -142,11 +142,12 @@ private:
     ComPtr<ID3D12RootSignature> m_postProcessingRootSignature;
     ComPtr<ID3D12PipelineState> m_postProcessingStateObject;
     D3D12Texture m_postProcessingOutput;
+    D3D12Buffer m_quadVertexBuffer;
+    D3D12_VERTEX_BUFFER_VIEW m_quadVertexBufferView;
 
     void createPostProcessingPipeline();
     void performPostProcessing();
 
-    void copyToBackbuffer();
     void createRandomTexture();
     void updateUniforms();
     void createOutputTextures();
@@ -159,7 +160,7 @@ private:
     void ReleaseDeviceDependentResources();
     void ReleaseWindowSizeDependentResources();
     void CreateRaytracingInterfaces();
-    void SerializeAndCreateRaytracingRootSignature(D3D12_ROOT_SIGNATURE_DESC& desc, ComPtr<ID3D12RootSignature>* rootSig);
+    void SerializeAndCreateRootSignature(D3D12_ROOT_SIGNATURE_DESC& desc, ComPtr<ID3D12RootSignature>* rootSig);
     void CreateRootSignatures();
     void CreateLocalRootSignatureSubobjects(CD3DX12_STATE_OBJECT_DESC* raytracingPipeline);
     void CreateDescriptorHeap();
