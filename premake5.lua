@@ -38,7 +38,7 @@ project "ToyRaygun"
     characterset "ASCII"
     location ("build/" .. _ACTION)
 
-    debugdir "./runtime/"
+    debugdir (RUNTIME_DIR)
 
     defines {
         "_THREAD_SAFE",
@@ -132,3 +132,8 @@ project "ToyRaygun"
     end
 
     filter {}
+
+    postbuildcommands {
+        "{COPYDIR} \"" .. path.getabsolute(path.join(RUNTIME_DIR, "shaders")) .. "\" \"%{cfg.buildtarget.directory}\"",
+        "{COPYDIR} \"" .. path.getabsolute(path.join(RUNTIME_DIR, "textures")) .. "\" \"%{cfg.buildtarget.directory}\""
+    }
