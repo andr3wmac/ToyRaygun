@@ -55,9 +55,13 @@ int main (int argc, char *args[])
     Shader* postProcessingShader = Engine::createShader();
     if (postProcessingShader->load("PostProcessing"))
     {
+        postProcessingShader->addFunction("vert", ShaderFunctionType::Vertex);
+        postProcessingShader->addFunction("frag", ShaderFunctionType::Fragment);
+        
+        // temporary until dx12 is converted
         postProcessingShader->addFunction("postProcess", ShaderFunctionType::Compute);
 
-        if (!postProcessingShader->compile(ShaderType::Compute))
+        if (!postProcessingShader->compile(ShaderType::Graphics))
         {
             std::cout << "Failed to compile PostProcessing shader." << std::endl;
             //return -1;
