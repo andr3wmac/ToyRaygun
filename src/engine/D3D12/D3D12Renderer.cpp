@@ -96,9 +96,6 @@ void D3D12Renderer::loadScene(toyraygun::Scene* scene)
     // Create raytracing interfaces: raytracing device and commandlist.
     CreateRaytracingInterfaces();
 
-    // Create root signatures for the shaders.
-    CreateRootSignatures();
-
     // Create a raytracing pipeline state object which defines the binding of shaders, state and resources to be used during raytracing.
     createRaytracingPipeline();
 
@@ -163,38 +160,6 @@ void D3D12Renderer::SerializeAndCreateRootSignature(D3D12_ROOT_SIGNATURE_DESC& d
 
     ThrowIfFailed(D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &blob, &error), error ? static_cast<char*>(error->GetBufferPointer()) : nullptr);
     ThrowIfFailed(device->CreateRootSignature(1, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&(*rootSig))));
-}
-
-void D3D12Renderer::CreateRootSignatures()
-{
-    auto device = m_device->GetD3DDevice();
-
-    // Global Root Signature
-    // This is a root signature that is shared across all raytracing shaders invoked during a DispatchRays() call.
-    {
-        CD3DX12_DESCRIPTOR_RANGE ranges[5]; // Perfomance TIP: Order from most frequent to least frequent.
-        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);  // output texture
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);  // random texture
-        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);  // index buffer
-        ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);  // vertex buffer
-        ranges[4].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);  // material id buffer
-
-        CD3DX12_ROOT_PARAMETER rootParameters[GlobalRootSignatureParams::Count];
-
-        rootParameters[GlobalRootSignatureParams::AccelerationStructureSlot].InitAsShaderResourceView(0);
-        rootParameters[GlobalRootSignatureParams::SceneConstantSlot].InitAsConstantBufferView(0);
-
-        rootParameters[GlobalRootSignatureParams::OutputViewSlot].InitAsDescriptorTable(1, &ranges[0]);
-        rootParameters[GlobalRootSignatureParams::RandomTextureSlot].InitAsDescriptorTable(1, &ranges[1]);
-        rootParameters[GlobalRootSignatureParams::IndexBuffersSlot].InitAsDescriptorTable(1, &ranges[2]);
-        rootParameters[GlobalRootSignatureParams::VertexBuffersSlot].InitAsDescriptorTable(1, &ranges[3]);
-        rootParameters[GlobalRootSignatureParams::MaterialIDBufferSlot].InitAsDescriptorTable(1, &ranges[4]);
-        
-        CD3DX12_ROOT_SIGNATURE_DESC globalRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
-        SerializeAndCreateRootSignature(globalRootSignatureDesc, &m_raytracingGlobalRootSignature);
-    }
-
-    // Local Root Signature would go here but not currently in use.
 }
 
 // Create raytracing device and command list.
@@ -658,7 +623,7 @@ void D3D12Renderer::createRandomTexture()
     commandList->Reset(commandAllocator, nullptr);
 
     toyraygun::Texture blueNoiseTex;
-    blueNoiseTex.loadFile("C:/Users/Andrew/Documents/ST Blue Noise/stbn_vec3_2Dx1D_128x128x64_62.png");
+    blueNoiseTex.loadFile("textures/stbn_vec3_2Dx1D_128x128x64_0.png");
 
     // Create the output resource. The dimensions and format should match the swap-chain.
     auto uavDesc = CD3DX12_RESOURCE_DESC::Tex2D(backbufferFormat, blueNoiseTex.getWidth(), blueNoiseTex.getHeight(), 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
@@ -672,8 +637,6 @@ void D3D12Renderer::createRandomTexture()
         nullptr, 
         IID_PPV_ARGS(&m_randomTexture.resource)));
     NAME_D3D12_OBJECT(m_randomTexture.resource);
-
-
 
     // Generate Random Texture
     {
@@ -728,6 +691,49 @@ void D3D12Renderer::createRandomTexture()
 // with all configuration options resolved, such as local signatures and other state.
 void D3D12Renderer::createRaytracingPipeline()
 {
+    auto device = m_device->GetD3DDevice();
+
+    // Global Root Signature
+    // This is a root signature that is shared across all raytracing shaders invoked during a DispatchRays() call.
+    {
+        CD3DX12_DESCRIPTOR_RANGE ranges[5]; // Perfomance TIP: Order from most frequent to least frequent.
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);  // Output
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);  // Random Texture
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);  // Index
+        ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);  // Vertex
+        ranges[4].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5);  // MaterialIDs
+
+        CD3DX12_ROOT_PARAMETER rootParameters[7];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0]); // Output
+        rootParameters[1].InitAsShaderResourceView(0);          // Acceleration Structure
+        rootParameters[2].InitAsConstantBufferView(0);          // Uniforms
+        rootParameters[3].InitAsDescriptorTable(1, &ranges[1]); // Random Texture
+        rootParameters[4].InitAsDescriptorTable(1, &ranges[2]); // Index
+        rootParameters[5].InitAsDescriptorTable(1, &ranges[3]); // Vertex
+        rootParameters[6].InitAsDescriptorTable(1, &ranges[4]); // MaterialIDs
+
+        // Sampler for random texture.
+        D3D12_STATIC_SAMPLER_DESC sampler = {};
+        sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+        sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        sampler.MipLODBias = 0;
+        sampler.MaxAnisotropy = 0;
+        sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+        sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+        sampler.MinLOD = 0.0f;
+        sampler.MaxLOD = D3D12_FLOAT32_MAX;
+        sampler.ShaderRegister = 2;
+        sampler.RegisterSpace = 0;
+        sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+        CD3DX12_ROOT_SIGNATURE_DESC globalRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters, 1, &sampler);
+        SerializeAndCreateRootSignature(globalRootSignatureDesc, &m_raytracingGlobalRootSignature);
+    }
+
+    // Local Root Signature would go here but not currently in use.
+
     /* Example of working RTPSO:
     --------------------------------------------------------------------
     | D3D12 State Object 0x000000ADFDCFE7C0: Raytracing Pipeline
@@ -846,18 +852,18 @@ void D3D12Renderer::performRaytracing()
     // Copy the updated scene constant buffer to GPU.
     memcpy(&m_mappedConstantData[bufferIndex].constants, &m_sceneCB[bufferIndex], sizeof(m_sceneCB[bufferIndex]));
     auto cbGpuAddress = m_perFrameConstants->GetGPUVirtualAddress() + bufferIndex * sizeof(m_mappedConstantData[0]);
-    commandList->SetComputeRootConstantBufferView(GlobalRootSignatureParams::SceneConstantSlot, cbGpuAddress);
 
     // Bind the heaps, acceleration structure and dispatch rays.
     commandList->SetDescriptorHeaps(1, m_descriptorHeap.GetAddressOf());
 
     // Set index and successive vertex buffer decriptor tables
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::IndexBuffersSlot,     m_indexBuffer.gpuDescriptorHandle);
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::VertexBuffersSlot,    m_vertexBuffer.gpuDescriptorHandle);
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::MaterialIDBufferSlot, m_materialIDBuffer.gpuDescriptorHandle);
-    commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot,       m_raytracingOutput.uavGPUHandle);
-
-    commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::AccelerationStructureSlot, m_topLevelAccelerationStructure->GetGPUVirtualAddress());
+    commandList->SetComputeRootDescriptorTable(0, m_raytracingOutput.uavGPUHandle);
+    commandList->SetComputeRootShaderResourceView(1, m_topLevelAccelerationStructure->GetGPUVirtualAddress());
+    commandList->SetComputeRootConstantBufferView(2, cbGpuAddress);
+    commandList->SetComputeRootDescriptorTable(3, m_randomTexture.srvGPUHandle);
+    commandList->SetComputeRootDescriptorTable(4, m_indexBuffer.gpuDescriptorHandle);
+    commandList->SetComputeRootDescriptorTable(5, m_vertexBuffer.gpuDescriptorHandle);
+    commandList->SetComputeRootDescriptorTable(6, m_materialIDBuffer.gpuDescriptorHandle);
 
     // Since each shader table has only one shader record, the stride is same as the size.
     D3D12_DISPATCH_RAYS_DESC dispatchDesc = {};
@@ -898,22 +904,7 @@ void D3D12Renderer::createAccumulatePipeline()
         rootParameters[2].InitAsDescriptorTable(1, &ranges[2]);
         rootParameters[3].InitAsConstantBufferView(0);
 
-        D3D12_STATIC_SAMPLER_DESC sampler = {};
-        sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-        sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        sampler.MipLODBias = 0;
-        sampler.MaxAnisotropy = 0;
-        sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-        sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-        sampler.MinLOD = 0.0f;
-        sampler.MaxLOD = D3D12_FLOAT32_MAX;
-        sampler.ShaderRegister = 0;
-        sampler.RegisterSpace = 0;
-        sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-        CD3DX12_ROOT_SIGNATURE_DESC accumRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters, 1, &sampler);
+        CD3DX12_ROOT_SIGNATURE_DESC accumRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
         SerializeAndCreateRootSignature(accumRootSignatureDesc, &m_accumulateRootSignature);
     }
 
