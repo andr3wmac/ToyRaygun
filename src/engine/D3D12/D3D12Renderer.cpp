@@ -622,7 +622,7 @@ void D3D12Renderer::createRandomTexture()
     // Reset the command list for the random texture construction.
     commandList->Reset(commandAllocator, nullptr);
 
-    toyraygun::Texture randomTex = Texture::generateRandomTexture(m_width, m_height, 1);
+    toyraygun::Texture randomTex = Texture::generateRandomTexture(m_width, m_height, 4);
 
     // Create the output resource. The dimensions and format should match the swap-chain.
     auto uavDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R32_UINT, randomTex.getWidth(), randomTex.getHeight(), 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
