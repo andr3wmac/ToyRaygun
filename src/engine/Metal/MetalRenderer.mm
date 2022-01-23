@@ -181,12 +181,18 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // Post Processing Pipeline
     toyraygun::Shader* postProcessingShader = _parent->getPostProcessingShader();
     _postProcessingLib = (id<MTLLibrary>)postProcessingShader->getCompiledShader();
+    
+    NSString* vertexFnName = [NSString stringWithCString:postProcessingShader->getFunction(ShaderFunctionType::Vertex).c_str()
+                                                    encoding:[NSString defaultCStringEncoding]];
+    
+    NSString* fragmentFnName = [NSString stringWithCString:postProcessingShader->getFunction(ShaderFunctionType::Fragment).c_str()
+                                                    encoding:[NSString defaultCStringEncoding]];
 
     // Copies rendered scene into the MTKView
     MTLRenderPipelineDescriptor *renderDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
     renderDescriptor.sampleCount = 1;
-    renderDescriptor.vertexFunction = [_postProcessingLib newFunctionWithName:@"vert"];
-    renderDescriptor.fragmentFunction = [_postProcessingLib newFunctionWithName:@"frag"];
+    renderDescriptor.vertexFunction = [_postProcessingLib newFunctionWithName:vertexFnName];
+    renderDescriptor.fragmentFunction = [_postProcessingLib newFunctionWithName:fragmentFnName];
     renderDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
 
     _copyPipeline = [_device newRenderPipelineStateWithDescriptor:renderDescriptor error:&error];

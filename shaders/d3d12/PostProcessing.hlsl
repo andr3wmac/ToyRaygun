@@ -5,15 +5,29 @@
 
 #include "shaders/common.h"
 
-RWTexture2D<float4> InputTexture : register(u0);
-RWTexture2D<float4> OutputTexture : register(u1);
+Texture2D g_texture : register(t0);
+SamplerState g_sampler : register(s0);
+ConstantBuffer<Uniforms> g_uniforms : register(b0);
 
-ConstantBuffer<Uniforms> uniforms : register(b0);
-
-[numthreads(1, 1, 1)]
-void postProcess(uint3 idx : SV_DispatchThreadID)
+struct PSInput
 {
-    float3 color = InputTexture[idx.xy].rgb;
+    float4 position : SV_POSITION;
+    float2 uv : TEXCOORD0;
+};
+
+PSInput vert(float4 position : POSITION, float2 uv : TEXCOORD0)
+{
+    PSInput result;
+
+    result.position = position;
+    result.uv = uv;
+
+    return result;
+}
+
+float4 frag(PSInput input) : SV_TARGET
+{
+    float3 color = g_texture.Sample(g_sampler, input.uv).rgb;
 
     // Tonemapping.
     color = ACESFilm(color);
@@ -21,5 +35,5 @@ void postProcess(uint3 idx : SV_DispatchThreadID)
     // Convert to SRGB.
     color = float3(D3DX_FLOAT_to_SRGB(color.r), D3DX_FLOAT_to_SRGB(color.g), D3DX_FLOAT_to_SRGB(color.b));
 
-    OutputTexture[idx.xy] = float4(color.rgb, 1.0);
+    return float4(color.rgb, 1.0);
 }
