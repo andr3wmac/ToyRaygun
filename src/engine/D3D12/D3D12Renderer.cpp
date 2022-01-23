@@ -998,6 +998,8 @@ void D3D12Renderer::createPostProcessingPipeline()
         XMFLOAT2 uv;
     };
 
+    // Instead of a full screen quad we use a triangle thats twice the width and height
+    // of the screen, then double the UVs so they're 0-1 over the area of the screen.
     std::vector<QuadVertex> vertices;
     vertices.push_back({ XMFLOAT3(-1.0f,  1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) }); // Top Left
     vertices.push_back({ XMFLOAT3( 3.0f,  1.0f, 0.0f), XMFLOAT2(2.0f, 0.0f) }); // Top Right
